@@ -153,7 +153,7 @@ async function tablePage(key) {
     const v = r[k]; if (t === "tag") return `<td><span class="tag ${v === "REORDER" || v === "In shop" ? "bad" : "ok"}">${esc(v)}</span></td>`;
     return `<td class="${t === "n" ? "n" : ""}">${t === "n" ? kes(v) : esc(v)}</td>`; }).join("")}
     <td>${pm(def, "edit") ? `<button class="btn sm" data-edit="${i}">Edit</button>` : ""} ${def.print ? `<button class="btn sm pbtn" data-print="${i}">Print card</button>` : ""}
-    ${def.mpay && can("mpay.use") ? `<button class="btn sm" style="background:#12b76a" data-pay="${i}">M-Pesa</button>` : ""}${def.mpay === "repair" ? ` <button class="btn sm ghost" data-wa="${i}">Send tracking link</button>` : ""}
+    ${def.mpay && can("mpay.use") ? `<button class="btn sm" style="background:#12b76a" data-pay="${i}">M-Pesa</button>` : ""}${def.mpay === "repair" ? ` <button class="btn sm wabtn" data-wa="${i}">Send tracking link</button>` : ""}
     ${pm(def, "delete") ? `<button class="btn sm warn" data-del="${i}">Delete</button>` : ""}</td></tr>`).join("");
   if (def.quick) await refreshLookups();
   const quickBar = def.quick ? `<div class="bar" id="quick">${catalog.filter(c => c.active).map(c => `<button class="btn sm ghost" data-svc="${esc(c.name)}" title="KES ${c.default_price} per ${esc(c.unit)}">${esc(c.name.split(" (")[0])}</button>`).join("")}</div>` : "";
@@ -473,20 +473,21 @@ function mpayDialog(pre = {}) {
   const f = $("#dlgForm");
   f.innerHTML = `<h2>Request M-Pesa payment</h2><p style="color:var(--mut);margin-top:0">A prompt appears on the customer's phone. They enter their M-Pesa PIN to pay.</p><div class="grid">
     <label>Customer phone<input name="phone" value="${esc(pre.phone || "")}" required inputmode="tel" placeholder="07XX XXX XXX"></label>
-    <label id="viaWrap" hidden>Take the payment through<select name="provider"></select></label>
+    <label id="viaWrap">Take the payment through<select name="provider"><option value="daraja">M-Pesa (Safaricom Daraja)</option><option value="kopokopo" disabled>Kopo Kopo till (checking…)</option></select></label>
     <label>Amount (KES, whole shillings)<input name="amount" type="number" min="1" max="150000" step="1" value="${esc(pre.amount || "")}" required></label>
     <label>For (job card JC-0001, job J-001, or a short note)<input name="ref" value="${esc(pre.ref || "")}" maxlength="20"></label>
     <label>Description<input name="purpose" value="${esc(pre.purpose || "")}" maxlength="60"></label>
     <label class="full" style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="auto" ${pre.auto ? "checked" : ""} style="width:auto"> Record the payment in Income automatically when it succeeds (leave off for shop sales you record yourself)</label></div>
     <p id="mstat" class="msg" style="min-height:1.5em"></p>
     <div class="bar"><button class="btn" value="send" style="background:#12b76a">Send prompt</button><button class="btn ghost" value="cancel" formnovalidate>Close</button></div>`;
-  // when both Daraja and Kopo Kopo are set up, let staff choose; with only one, nothing extra is shown
-  db.functions.invoke("stk-push", { body: { action: "providers" } }).then(r => { const p = r.data && r.data.providers; if (!p || p.length < 2) return;
-    f.elements.provider.innerHTML = p.map(x => `<option value="${esc(x.id)}" ${x.id === r.data.default ? "selected" : ""}>${esc(x.label)}</option>`).join(""); $("#viaWrap").hidden = false; }).catch(() => {});
+  // both services are always listed; one that is not set up yet is greyed out and says so
+  const setVia = (ok, def) => { const sel = f.elements.provider; for (const o of sel.options) { const on = ok.includes(o.value); o.disabled = !on; o.textContent = (o.value === "daraja" ? "M-Pesa (Safaricom Daraja)" : "Kopo Kopo till") + (on ? "" : " — not set up yet"); } if (def && ok.includes(def)) sel.value = def; else if (!ok.includes(sel.value) && ok.length) sel.value = ok[0]; };
+  setVia(["daraja"], "daraja"); f.elements.provider.options[1].textContent = "Kopo Kopo till (checking…)";
+  db.functions.invoke("stk-push", { body: { action: "providers" } }).then(r => { const p = r.data && r.data.providers; setVia(p ? p.map(x => x.id) : ["daraja"], r.data && r.data.default); }).catch(() => setVia(["daraja"], "daraja"));
   f.onsubmit = async e => {
     if (e.submitter.value !== "send") { route(); return; }
     e.preventDefault(); const st = $("#mstat"), btn = e.submitter; btn.disabled = true; st.style.color = ""; st.textContent = "Sending…";
-    const res = await db.functions.invoke("stk-push", { body: { phone: f.elements.phone.value, amount: Number(f.elements.amount.value), ref: f.elements.ref.value, purpose: f.elements.purpose.value, auto_record: f.elements.auto.checked, provider: $("#viaWrap").hidden ? undefined : f.elements.provider.value, customer_name: pre.name || "" } });
+    const res = await db.functions.invoke("stk-push", { body: { phone: f.elements.phone.value, amount: Number(f.elements.amount.value), ref: f.elements.ref.value, purpose: f.elements.purpose.value, auto_record: f.elements.auto.checked, provider: f.elements.provider.value, customer_name: pre.name || "" } });
     if (res.error || !res.data || !res.data.ok) { st.style.color = "#b42318"; st.textContent = await invokeErr(res); btn.disabled = false; return; }
     st.textContent = "Prompt sent. Ask the customer to check their phone and enter their PIN…";
     const id = res.data.public_id;
