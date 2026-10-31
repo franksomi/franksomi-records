@@ -5,13 +5,14 @@
 <link rel="icon" href="logo.png"><link rel="stylesheet" href="style.css">
 </head><body>
 <div id="login" hidden>
-  <form id="loginForm"><img src="logo.png" alt="" width="72"><h1>Franksomi Solution Ltd</h1><p>Sign in to the record book</p>
+  <div class="login-art"><img src="logo.png" alt=""><h1>Franksomi Solution Ltd</h1><div class="tagline">For Quality Solutions in Tech</div><ul><li>Repairs</li><li>Sales</li><li>Installations</li><li>Printing &amp; Cyber</li></ul></div>
+  <form id="loginForm"><h1>Sign in</h1><p>Franksomi record book</p>
     <label>Email<input name="email" type="email" required autocomplete="username"></label>
     <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
     <button class="btn">Sign in</button><p id="loginMsg" class="err"></p></form>
 </div>
 <div id="app" hidden>
-  <header><img src="logo.png" alt="" height="34"><b>Franksomi Records</b><span id="who"></span><button class="btn ghost" id="logout">Sign out</button></header>
+  <header><img src="logo.png" alt="" height="34"><b>Franksomi Records</b><span id="who"></span><button class="btn ghost" id="chpw" title="Change my password">Password</button><button class="btn ghost" id="logout">Sign out</button></header>
   <nav id="nav"></nav>
   <main id="view"></main>
 </div>
@@ -20,5 +21,9 @@
 <div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
+<script src="brand.js"></script>
+<script src="mpesa.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="pdf.js"></script>
 <script src="app.js"></script>
 </body></html>
