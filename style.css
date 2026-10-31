@@ -61,5 +61,6 @@ header{border-bottom:3px solid transparent;border-image:linear-gradient(90deg,va
 .doctools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}.doctools #pdfmsg{color:#555}
 body.printpage{background:#e9edf2;padding:16px 8px}body.printpage .doc{box-shadow:0 2px 14px rgba(15,23,42,.18);border-radius:6px;min-height:200px}
 .multi{grid-column:1/-1;border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px 10px;display:flex;gap:6px 18px;flex-wrap:wrap;margin:0}.multi legend{padding:0 6px;font-size:13px;color:var(--mut)}.multi label{display:flex;gap:6px;align-items:center;margin:0}.multi input{width:auto}
+.btn.wabtn{background:#128c7e;color:#fff;border:0;font-weight:600}.btn.wabtn:hover{background:#075e54}
 @media print{body{background:#fff}body>*:not(#print){display:none!important}#print{display:block!important}.noprint{display:none!important}.doc{padding:0}}
 [hidden]{display:none!important}
