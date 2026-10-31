@@ -10,6 +10,10 @@
     <label>Email<input name="email" type="email" required autocomplete="username"></label>
     <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
     <button class="btn">Sign in</button><p id="loginMsg" class="err"></p></form>
+  <form id="gateForm" hidden><h1>Choose your own password</h1><p id="gateWho">Before you start, set a password only you know.</p>
+    <label>New password (8 or more characters)<input name="p" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></label>
+    <label>Type it again<input name="q" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></label>
+    <button class="btn">Save and continue</button><p id="gateMsg" class="err"></p><button class="btn ghost" type="button" id="gateOut">Sign out</button></form>
 </div>
 <div id="app" hidden>
   <header><img src="logo.png" alt="" height="34"><b>Franksomi Records</b><span id="who"></span><button class="btn ghost" id="chpw" title="Change my password">Password</button><button class="btn ghost" id="logout">Sign out</button></header>

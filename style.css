@@ -19,8 +19,8 @@ tr.low td{background:rgba(255,145,77,.18)}.tag{padding:2px 8px;border-radius:99p
 .tag.bad{background:#fecdca;color:#912018}.tag.ok{background:#d1fadf;color:#05603a}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}.card small{color:var(--mut)}.card b{display:block;font-size:24px;margin-top:4px}
-#login{min-height:100vh;display:grid;place-items:center}#loginForm{background:var(--card);padding:28px;border-radius:14px;width:min(360px,92vw);display:grid;gap:12px;border:1px solid var(--line)}
-#loginForm h1{margin:0;font-size:20px}.err{color:#b42318;margin:0;min-height:1em}
+#login{min-height:100vh;display:grid;place-items:center}#loginForm,#gateForm{background:var(--card);padding:28px;border-radius:14px;width:min(360px,92vw);display:grid;gap:12px;border:1px solid var(--line)}
+#loginForm h1,#gateForm h1{margin:0;font-size:20px}.err{color:#b42318;margin:0;min-height:1em}
 dialog{border:0;border-radius:14px;padding:20px;width:min(640px,94vw);background:var(--card);color:var(--txt)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.full{grid-column:1/-1}
 #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:10px;display:none}
@@ -51,10 +51,15 @@ header{border-bottom:3px solid transparent;border-image:linear-gradient(90deg,va
 .login-art:before{content:"";position:absolute;inset:0;background:url(brand-circuit.svg) right bottom/min(900px,140%) auto no-repeat;pointer-events:none}.login-art>*{position:relative}
 .login-art img{background:#fff;border-radius:50%;padding:8px;width:104px;height:104px}.login-art h1{margin:6px 0 0;font-size:30px}.login-art .tagline{color:var(--orange);letter-spacing:.1em;text-transform:uppercase;font-weight:600;font-size:13px}
 .login-art ul{list-style:none;margin:12px 0 0;padding:0;display:flex;gap:8px;flex-wrap:wrap}.login-art li{border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:4px 12px;font-size:13px}
-#loginForm{align-self:center;justify-self:center;border:0;background:transparent}
+#loginForm,#gateForm{align-self:center;justify-self:center;border:0;background:transparent}
 @media(max-width:600px){header #who{display:none}.hero:before{opacity:.4}.hero h2{font-size:19px}}
-@media(max-width:760px){#login{grid-template-columns:1fr}.login-art{padding:22px 20px;min-height:0}.login-art h1{font-size:22px}.login-art img{width:64px;height:64px}.login-art ul{display:none}#loginForm{padding:20px 22px 32px}}
+@media(max-width:760px){#login{grid-template-columns:1fr}.login-art{padding:22px 20px;min-height:0}.login-art h1{font-size:22px}.login-art img{width:64px;height:64px}.login-art ul{display:none}#loginForm,#gateForm{padding:20px 22px 32px}}
 .doc .docfoot{margin-top:18px;padding-top:8px;border-top:3px solid #ff914d;display:flex;gap:10px;align-items:center;font-size:11px;color:#444}.doc .docfoot b{color:#0d6eae;letter-spacing:.06em;text-transform:uppercase}
 .doc .docfoot span:last-child{margin-left:auto;text-align:right}
+.notewarn{background:#fff4e5;border:1px solid #f5c26b;color:#7a4b00;border-radius:8px;padding:8px 10px;font-size:14px}.badge{display:inline-block;background:#fff4e5;color:#9a5b00;border:1px solid #f5c26b;border-radius:99px;padding:1px 8px;font-size:11px;margin-top:3px}
+.btn.pbtn{background:var(--navy);color:#fff;border:0;font-weight:600}.btn.pbtn:hover{background:var(--blue)}.btn.pdfbtn{background:#b42318;color:#fff;border:0;font-weight:600}
+.doctools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}.doctools #pdfmsg{color:#555}
+body.printpage{background:#e9edf2;padding:16px 8px}body.printpage .doc{box-shadow:0 2px 14px rgba(15,23,42,.18);border-radius:6px;min-height:200px}
+.multi{grid-column:1/-1;border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px 10px;display:flex;gap:6px 18px;flex-wrap:wrap;margin:0}.multi legend{padding:0 6px;font-size:13px;color:var(--mut)}.multi label{display:flex;gap:6px;align-items:center;margin:0}.multi input{width:auto}
 @media print{body{background:#fff}body>*:not(#print){display:none!important}#print{display:block!important}.noprint{display:none!important}.doc{padding:0}}
 [hidden]{display:none!important}

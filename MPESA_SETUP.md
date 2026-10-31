@@ -1,5 +1,7 @@
 # M-Pesa payment prompts (STK push) and the customer tracking page
 
+> Using a **Kopo Kopo** till instead of (or as well as) Safaricom Daraja? See `KOPOKOPO_SETUP.md`. Everything below about the customer page and staff screens applies to both.
+
 What you get
 - **Staff:** an "M-Pesa" button on every repair and job row, and an "M-Pesa checkout" page. A prompt appears on the customer's phone; they enter their PIN; the payment is recorded in Income automatically (linked to the job card or job) with its M-Pesa code.
 - **Customers:** `portal.html` — no login. They type the job card number (JC-0001) and the phone number you recorded. They see the repair stage, your message, the bill and the balance, and can pay the balance with M-Pesa. The job card prints the address, and the "Send tracking link" button on a repair opens WhatsApp with the link ready to send.
