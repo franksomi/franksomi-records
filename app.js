@@ -23,6 +23,7 @@ const must = r => { if (r.error) { toast(r.error.message); throw r.error; } retu
 
 // ---- field/table definitions ------------------------------------------------
 const PAY = ["Cash", "M-Pesa", "Bank"];
+const LEFT_WITH = ["SIM", "Memory card", "Battery", "Charger", "Case"], CONDITION = ["Cracked screen", "Scratches", "Water damage", "Will not power on"];
 const T = {
   repairs: { title: "Repairs", view: "v_repairs", perm: "repairs", table: "repairs", order: "id", print: "jobcard", mpay: "repair",
     cols: [["id", "No."], ["received_on", "Received"], ["customer_name", "Customer"], ["contact", "Contact"], ["item_type", "Item"], ["brand_model", "Brand / model"], ["fault", "Fault"],
@@ -30,7 +31,8 @@ const T = {
     fields: [["received_on", "Date received", "date", { today: 1 }], ["customer_name", "Customer name", "text", { req: 1 }], ["contact", "Contact", "text"],
       ["item_type", "Item type", "list:item_type"], ["brand_model", "Brand / model", "list:brand"], ["serial_no", "Serial no. / IMEI", "text"],
       ["stage", "Repair stage (customer sees this)", "select:Received,Diagnosing,Waiting for approval,Waiting for parts,Repairing,Testing,Ready for collection,Collected", { def: "Received" }], ["customer_note", "Message to customer (shown on the tracking page)", "text", { full: 1 }], ["sms_optout", "Do NOT send this customer SMS updates", "check"],
-      ["fault", "Fault reported", "text", { full: 1 }], ["diagnosis", "Diagnosis", "text", { full: 1 }],
+      ["fault", "Fault reported", "text", { full: 1 }], ["left_with", "Left with the device (tick what the customer handed in)", "multi:" + LEFT_WITH.join("|"), { full: 1 }],
+      ["condition", "Condition on arrival", "multi:" + CONDITION.join("|"), { full: 1 }], ["diagnosis", "Diagnosis", "text", { full: 1 }],
       ["part1_id", "Part used 1 (from stock)", "stock"], ["part1_qty", "Qty", "number"], ["part2_id", "Part used 2 (from stock)", "stock"], ["part2_qty", "Qty", "number"],
       ["labor_hours", "Labor hours", "number"], ["labor_cost", "Labor cost (KES)", "number"],
       ["deposit_received", "Refundable deposit received", "number"], ["deposit_payment", "Deposit paid by", "select:" + PAY.join()], ["deposit_mpesa_ref", "Deposit M-Pesa code", "text"], ["deposit_applied", "Deposit applied to bill", "number"], ["deposit_refunded", "Deposit refunded", "number"],
@@ -82,6 +84,7 @@ function widget([k, l, t, o = {}], v) {
   if (t === "text") inner = `<input name="${k}" value="${esc(val)}" ${req} autocomplete="off">`;
   else if (t === "number") inner = `<input name="${k}" type="number" step="any" min="0" value="${esc(val)}" ${req} inputmode="decimal">`;
   else if (t === "check") return `<label class="full" style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="${k}" ${v ? "checked" : ""} style="width:auto"> ${esc(l)}</label>`;
+  else if (t.startsWith("multi:")) { const have = Array.isArray(v) ? v : []; return `<fieldset class="full multi"><legend>${esc(l)}</legend>${t.slice(6).split("|").map(x => `<label><input type="checkbox" name="${k}" value="${esc(x)}" ${have.includes(x) ? "checked" : ""}> ${esc(x)}</label>`).join("")}</fieldset>`; }
   else if (t === "date") inner = `<input name="${k}" type="date" value="${esc(val)}" ${req}>`;
   else if (t.startsWith("select:")) { const sv = val || o.def || ""; inner = `<select name="${k}">${o.def ? "" : `<option value=""></option>`}${t.slice(7).split(",").map(x => `<option ${x === sv ? "selected" : ""}>${esc(x)}</option>`).join("")}</select>`; }
   else if (t.startsWith("list:")) { const id = "dl_" + k; inner = `<input name="${k}" list="${id}" value="${esc(val)}" ${req} autocomplete="off"><datalist id="${id}">${lists[t.slice(5)].map(x => `<option value="${esc(x.value)}">`).join("")}</datalist>`; }
@@ -95,6 +98,7 @@ function readForm(form, fields) {
   for (const [k, , t, o = {}] of fields) {
     if (o.owner && !can("costs.view")) continue;
     if (t === "check") { out[k] = form.elements[k].checked; continue; }
+    if (t.startsWith("multi:")) { out[k] = [...form.querySelectorAll(`input[name="${k}"]:checked`)].map(x => x.value); continue; }
     const raw = form.elements[k].value.trim();
     out[k] = raw === "" ? null : (t === "number" || t === "stock" || t === "supplier") ? Number(raw) : raw;
   }
@@ -103,6 +107,7 @@ function readForm(form, fields) {
 async function openForm(key, row) {
   const def = T[key];
   await refreshLookups();
+  if (key === "repairs" && row) row = { ...row, ...(await repairChecks(row.id)) };
   const dlg = $("#dlg"), f = $("#dlgForm");
   f.innerHTML = `<h2>${row ? "Edit" : "New"} – ${esc(def.title)}</h2><div class="grid">${def.fields.map(fd => widget(fd, row && row[fd[0]])).join("")}</div>
     <div class="bar" style="margin-top:14px"><button class="btn" value="save">Save</button><button class="btn ghost" value="cancel" formnovalidate>Cancel</button></div>`;
@@ -110,6 +115,8 @@ async function openForm(key, row) {
     if (e.submitter.value !== "save") return;
     e.preventDefault();
     const data = readForm(f, def.fields);
+    const checks = key === "repairs" ? { left_with: data.left_with || [], condition: data.condition || [] } : null;
+    if (checks) { delete data.left_with; delete data.condition; }
     const costVal = key === "inventory" ? data.unit_cost : key === "sales" ? data.cost_new : undefined;
     delete data.unit_cost; delete data.cost_new;
     if (key === "repairs") { data.part1_qty ??= 1; data.part2_qty ??= 1; }
@@ -121,6 +128,10 @@ async function openForm(key, row) {
     const q = row ? db.from(def.table).update(data).eq("id", row.id).select("id") : db.from(def.table).insert(Object.fromEntries(Object.entries(data).filter(([, v]) => v !== null))).select("id");
     const r = await q; if (r.error) return toast(r.error.message);
     if (row && (!r.data || !r.data.length)) return toast("You can't change this record. Staff can fix only their own entries, within a day.");
+    if (checks) {
+      const rid = row ? row.id : (Array.isArray(r.data) ? r.data[0]?.id : r.data?.id);
+      if (rid) { const c = await db.from("repair_checks").upsert({ repair_id: rid, ...checks, updated_at: new Date().toISOString() }); if (c.error) return toast("Saved, but the checklist was not: " + c.error.message); }
+    }
     if (costVal != null) {
       let id = row ? row.id : (Array.isArray(r.data) ? r.data[0]?.id : r.data?.id);
       if (id) { const c = await db.from(key === "inventory" ? "item_costs" : "sale_costs").upsert(key === "inventory" ? { item_id: id, unit_cost: costVal } : { sale_id: id, unit_cost: costVal }); if (c.error) toast(c.error.message); }
@@ -141,7 +152,7 @@ async function tablePage(key) {
   const body = rows.map((r, i) => `<tr class="${r.status === "REORDER" ? "low" : ""}">${cols.map(([k, , t]) => {
     const v = r[k]; if (t === "tag") return `<td><span class="tag ${v === "REORDER" || v === "In shop" ? "bad" : "ok"}">${esc(v)}</span></td>`;
     return `<td class="${t === "n" ? "n" : ""}">${t === "n" ? kes(v) : esc(v)}</td>`; }).join("")}
-    <td>${pm(def, "edit") ? `<button class="btn sm" data-edit="${i}">Edit</button>` : ""} ${def.print ? `<button class="btn sm ghost" data-print="${i}">Print card</button>` : ""}
+    <td>${pm(def, "edit") ? `<button class="btn sm" data-edit="${i}">Edit</button>` : ""} ${def.print ? `<button class="btn sm pbtn" data-print="${i}">Print card</button>` : ""}
     ${def.mpay && can("mpay.use") ? `<button class="btn sm" style="background:#12b76a" data-pay="${i}">M-Pesa</button>` : ""}${def.mpay === "repair" ? ` <button class="btn sm ghost" data-wa="${i}">Send tracking link</button>` : ""}
     ${pm(def, "delete") ? `<button class="btn sm warn" data-del="${i}">Delete</button>` : ""}</td></tr>`).join("");
   if (def.quick) await refreshLookups();
@@ -155,10 +166,10 @@ async function tablePage(key) {
     const b = e.target.closest("button"); if (!b) return;
     if (b.dataset.edit) openForm(key, rows[b.dataset.edit]);
     if (b.dataset.del && confirm("Delete this record? This cannot be undone.")) { const r = await db.from(def.table).delete().eq("id", rows[b.dataset.del].id); if (r.error) toast(r.error.message); else route(); }
-    if (b.dataset.print) printCard(def.print, rows[b.dataset.print]);
+    if (b.dataset.print) { let r = rows[b.dataset.print]; if (def.print === "jobcard") r = { ...r, ...(await repairChecks(r.id)) }; printCard(def.print, r); }
     if (b.dataset.pay) { const r = rows[b.dataset.pay]; mpayDialog(def.mpay === "repair"
-      ? { phone: r.contact, amount: Math.max(0, Math.floor(r.balance_due || 0)) || "", ref: "JC-" + String(r.id).padStart(4, "0"), purpose: "Repair payment", auto: true }
-      : { phone: r.contact, amount: Math.max(0, Math.floor(r.balance || 0)) || "", ref: r.job_no, purpose: "Job payment " + r.job_no, auto: true }); }
+      ? { phone: r.contact, amount: Math.max(0, Math.floor(r.balance_due || 0)) || "", ref: "JC-" + String(r.id).padStart(4, "0"), purpose: "Repair payment", auto: true, name: r.customer_name }
+      : { phone: r.contact, amount: Math.max(0, Math.floor(r.balance || 0)) || "", ref: r.job_no, purpose: "Job payment " + r.job_no, auto: true, name: r.client_name }); }
     if (b.dataset.wa) { const r = rows[b.dataset.wa], no = "JC-" + String(r.id).padStart(4, "0"), ph = String(r.contact || "").replace(/\D/g, "").replace(/^0/, "254");
       const msg = `Hello ${String(r.customer_name || "").split(" ")[0]}, track your repair (${no}) here: ${portalUrl(no)} — use the phone number you gave us. ${SHOP.name}, ${SHOP.phone}`;
       window.open("https://wa.me/" + ph + "?text=" + encodeURIComponent(msg), "_blank"); }
@@ -218,7 +229,7 @@ async function docsPage() {
   $("#view").innerHTML = `<h2>Quotation · Invoice · Receipt</h2><div class="bar">${can("docs.add") ? `<button class="btn" id="nd">+ New document</button>` : ""}</div>
     <div class="wrap"><table><thead><tr><th>No.</th><th>Type</th><th>Date</th><th>Customer</th><th>Total</th><th></th></tr></thead><tbody id="tb">
     ${rows.map((r, i) => `<tr><td>${docNo(r)}</td><td>${r.doc_type}</td><td>${esc(r.doc_date)}</td><td>${esc(r.customer)}</td><td class="n">${kes(docTotals(r).total)}</td>
-    <td>${can("docs.edit") ? `<button class="btn sm" data-e="${i}">Edit</button>` : ""} <button class="btn sm ghost" data-p="${i}">Print</button>${can("docs.delete") ? ` <button class="btn sm warn" data-d="${i}">Delete</button>` : ""}</td></tr>`).join("") || `<tr><td colspan="6">No documents yet.</td></tr>`}</tbody></table></div>`;
+    <td>${can("docs.edit") ? `<button class="btn sm" data-e="${i}">Edit</button>` : ""} <button class="btn sm pbtn" data-p="${i}">Print</button>${can("docs.delete") ? ` <button class="btn sm warn" data-d="${i}">Delete</button>` : ""}</td></tr>`).join("") || `<tr><td colspan="6">No documents yet.</td></tr>`}</tbody></table></div>`;
   if ($("#nd")) $("#nd").onclick = () => docForm();
   $("#tb").onclick = async e => { const b = e.target.closest("button"); if (!b) return; if (b.dataset.e) docForm(rows[b.dataset.e]); if (b.dataset.p) printCard("document", rows[b.dataset.p]);
     if (b.dataset.d && confirm("Delete this document? This cannot be undone.")) { const r = await db.from("documents").delete().eq("id", rows[b.dataset.d].id); if (r.error) toast(r.error.message); else docsPage(); } };
@@ -254,11 +265,17 @@ function docForm(row) {
 // ---- printable cards ----------------------------------------------------------
 const head = (title, no) => `<h1><span><img src="logo.png" alt="" height="30" style="vertical-align:middle;margin-right:8px;background:#fff;border-radius:4px;padding:2px">${SHOP.name.toUpperCase()}</span><span>${title}</span></h1><p>Repairs · Sales · Installations | ${SHOP.place} | Tel: ${SHOP.phone} | ${SHOP.email}${no ? ` | <b>${esc(no)}</b>` : ""}</p>`;
 const kv = (a) => `<table>${a.map(([k, v]) => `<tr><th style="width:30%">${esc(k)}</th><td>${esc(v)}</td></tr>`).join("")}</table>`;
+async function repairChecks(id) {
+  const r = await db.from("repair_checks").select("*").eq("repair_id", id).limit(1);
+  const x = (r.data && (Array.isArray(r.data) ? r.data[0] : r.data)) || {};
+  return { left_with: x.left_with || [], condition: x.condition || [] };
+}
+const tickLine = (all, have) => all.map(x => `${have.includes(x) ? "[✔]" : "[ ]"} ${esc(x)}`).join(" &nbsp;");
 function printCard(kind, r) {
   let h = "";
   if (kind === "jobcard") h = head("JOB CARD", "JC-" + String(r.id).padStart(4, "0")) + kv([["Customer", r.customer_name], ["Contact", r.contact], ["Date received", r.received_on], ["Item", [r.item_type, r.brand_model].filter(Boolean).join(" – ")], ["Serial / IMEI", r.serial_no], ["Fault reported", r.fault],
     ["Diagnosis", r.diagnosis], ["Parts (KES)", kes(r.parts_cost)], ["Labor (KES)", kes(r.labor_cost)], ["Estimated total (KES)", kes(r.total_cost)], ["Refundable deposit (KES)", kes(r.deposit_received)]]) +
-    `<div class="box">Left with device: [ ] SIM [ ] Memory card [ ] Battery [ ] Charger [ ] Case<br>Condition: [ ] Cracked screen [ ] Scratches [ ] Water damage [ ] Will not power on</div>
+    `<div class="box">Left with device: ${tickLine(LEFT_WITH, r.left_with || [])}<br>Condition: ${tickLine(CONDITION, r.condition || [])}</div>
      <div class="box"><b>Terms</b><br>1. Bring this card when collecting your device.<br>2. The estimate may change after full diagnosis; we will contact you first.<br>3. Please back up your data; we are not responsible for data lost during repair.<br>4. Devices not collected within 30 days of being notified may be charged a storage fee.<br>5. 30-day warranty on the replaced part only. Excludes physical or water damage.<br>6. A deposit is deducted from your final bill or refunded.</div>
      <p><b>Track your repair online:</b> ${esc(portalUrl("JC-" + String(r.id).padStart(4, "0")))} &nbsp;(Job card <b>JC-${String(r.id).padStart(4, "0")}</b> + the phone number you gave us)</p>
      <p>Customer signature: ______________________ &nbsp; Received by: ______________________</p>
@@ -286,9 +303,16 @@ function printCard(kind, r) {
 
 
 // ---- shared helpers for reports -------------------------------------------------
+// Opens the document in a NEW TAB (print.html) with Print and Download PDF buttons. If the browser blocks the new tab, it is shown on this page instead.
 function printHtml(html, filename = "Franksomi document.pdf") {
-  const p = $("#print"); p.innerHTML = `<div class="doc"><div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="btn" data-act="print">Print</button> <button class="btn" data-act="pdf" style="background:#b42318">Download PDF</button>
-    <button class="btn ghost" data-act="close">Close</button><span id="pdfmsg" style="align-self:center;color:#555"></span></div><div id="docbody">${html}<div class="docfoot"><img src="logo.png" alt="" height="26"><b>${BRAND.TAGLINE}</b><span>${SHOP.name} · ${SHOP.phone} · ${SHOP.email}</span></div></div></div>`;
+  const body = `<div id="docbody">${html}<div class="docfoot"><img src="logo.png" alt="" height="26"><b>${BRAND.TAGLINE}</b><span>${SHOP.name} · ${SHOP.phone} · ${SHOP.email}</span></div></div>`;
+  let tab = null;
+  try { localStorage.setItem("fk_print", JSON.stringify({ html: body, filename })); tab = window.open("print.html", "_blank"); } catch (_) { tab = null; }
+  if (tab) return;
+  try { localStorage.removeItem("fk_print"); } catch (_) {}
+  toast("Your browser blocked the new tab, so the document is shown here. Allow pop-ups for this site to open it in a new tab.");
+  const p = $("#print"); p.innerHTML = `<div class="doc"><div class="noprint doctools"><button class="btn pbtn" data-act="print">Print</button> <button class="btn pdfbtn" data-act="pdf">Download PDF</button>
+    <button class="btn ghost" data-act="close">Close</button><span id="pdfmsg"></span></div>${body}</div>`;
   $("#app").hidden = true; p.hidden = false; window.scrollTo(0, 0);
   p.onclick = async e => {
     const b = e.target.closest("button[data-act]"); if (!b) return;
@@ -331,7 +355,7 @@ async function eodPage() {
     ${r.owner ? `<h3>Profit on shop sales today</h3><p>KES ${kes(sumBy(sal, x => x.profit))}</p>` : ""}
     <h3>Cash drawer</h3><p>Cash in (sales, services, payments, deposits): <b>${kes(r.cash_in)}</b> − cash expenses: <b>${kes(r.cash_out)}</b> = expected cash <b>KES ${kes(r.expected_cash)}</b></p>
     ${cl ? `<p>Closed: counted <b>${kes(cl.counted_cash)}</b> · difference <b>${kes(cl.variance)}</b> ${cl.note ? "· " + esc(cl.note) : ""}</p>` : ""}`;
-  $("#view").innerHTML = `<h2>End of day</h2><div class="bar"><label>Day <input type="date" id="eday" value="${day}"></label><button class="btn ghost" id="eprint">Print report</button></div><div class="card" style="overflow:auto">${body}</div>
+  $("#view").innerHTML = `<h2>End of day</h2><div class="bar"><label>Day <input type="date" id="eday" value="${day}"></label><button class="btn pbtn" id="eprint">Print report</button></div><div class="card" style="overflow:auto">${body}</div>
     ${cl ? "" : `<div class="card" style="margin-top:12px"><b style="font-size:16px">Close the day</b><div class="grid" style="margin-top:8px"><label>Cash counted in drawer (KES)<input id="counted" type="number" min="0" step="any" inputmode="decimal"></label>
       <label>Note<input id="cnote" placeholder="Reason for any difference"></label></div><p id="cdiff" style="color:var(--mut)">Expected cash: KES ${kes(r.expected_cash)}</p><button class="btn" id="close">Save closing</button></div>`}`;
   $("#eday").onchange = e => { sessionStorage.setItem("eodDay", e.target.value); route(); };
@@ -360,7 +384,7 @@ async function monthlyPage() {
     <h3>Expenses by category</h3>${tbl(["Category", "Amount"], (r.expense_by_category || []).map(x => [x.category, x.amount]))}
     <h3>Daily cash closings</h3>${tbl(["Day", "Expected", "Counted", "Difference"], (r.closings || []).map(x => [x.day, x.expected, x.counted, x.variance]))}`;
   $("#view").innerHTML = `<h2>Monthly report</h2><div class="bar"><label>Month <select id="mm">${MONTHS.map((m, i) => `<option value="${i + 1}" ${i + 1 === mo ? "selected" : ""}>${m}</option>`).join("")}</select></label>
-    <label>Year <input id="my" type="number" value="${yr}" style="width:100px"></label><button class="btn ghost" id="mp">Print report</button></div><div class="card" style="overflow:auto">${body}</div>`;
+    <label>Year <input id="my" type="number" value="${yr}" style="width:100px"></label><button class="btn pbtn" id="mp">Print report</button></div><div class="card" style="overflow:auto">${body}</div>`;
   $("#mm").onchange = e => { sessionStorage.setItem("mMo", e.target.value); route(); }; $("#my").onchange = e => { sessionStorage.setItem("mYr", e.target.value); route(); };
   $("#mp").onclick = () => printHtml(head("MONTHLY REPORT", MONTHS[mo - 1] + " " + yr) + body, "Monthly report " + yr + "-" + String(mo).padStart(2, "0") + ".pdf");
 }
@@ -382,7 +406,7 @@ async function summaryPage() {
     <h3>Transport & logistics (year)</h3>${tbl(["", "KES"], [["Transport / Logistics", tr.transport], ["Fuel", tr.fuel], ["Total", tr.transport + tr.fuel]])}
     <h3>Repairs (all time)</h3>${tbl(["", "Value"], [["Items received", rp.received], ["Returned to customers", rp.returned], ["Still in shop", rp.in_shop], ["Parts charged", rp.parts], ["Labor charged", rp.labor], ["Customer deposits held", rp.deposits_held]])}
     <h3>Inventory</h3>${tbl(["", "Value"], [["Stock items", iv.items], ["Stock value at cost", iv.value], ["Items to reorder", iv.reorder]])}`;
-  $("#view").innerHTML = `<h2>Year summary</h2><div class="bar"><label>Year <input id="sy" type="number" value="${yr}" style="width:100px"></label><button class="btn ghost" id="sp">Print summary</button></div><div class="card" style="overflow:auto">${body}</div>`;
+  $("#view").innerHTML = `<h2>Year summary</h2><div class="bar"><label>Year <input id="sy" type="number" value="${yr}" style="width:100px"></label><button class="btn pbtn" id="sp">Print summary</button></div><div class="card" style="overflow:auto">${body}</div>`;
   $("#sy").onchange = e => { sessionStorage.setItem("yr", e.target.value); route(); };
   $("#sp").onclick = () => printHtml(head("SUMMARY", String(yr)) + body, "Year summary " + yr + ".pdf");
 }
@@ -449,16 +473,20 @@ function mpayDialog(pre = {}) {
   const f = $("#dlgForm");
   f.innerHTML = `<h2>Request M-Pesa payment</h2><p style="color:var(--mut);margin-top:0">A prompt appears on the customer's phone. They enter their M-Pesa PIN to pay.</p><div class="grid">
     <label>Customer phone<input name="phone" value="${esc(pre.phone || "")}" required inputmode="tel" placeholder="07XX XXX XXX"></label>
+    <label id="viaWrap" hidden>Take the payment through<select name="provider"></select></label>
     <label>Amount (KES, whole shillings)<input name="amount" type="number" min="1" max="150000" step="1" value="${esc(pre.amount || "")}" required></label>
     <label>For (job card JC-0001, job J-001, or a short note)<input name="ref" value="${esc(pre.ref || "")}" maxlength="20"></label>
     <label>Description<input name="purpose" value="${esc(pre.purpose || "")}" maxlength="60"></label>
     <label class="full" style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="auto" ${pre.auto ? "checked" : ""} style="width:auto"> Record the payment in Income automatically when it succeeds (leave off for shop sales you record yourself)</label></div>
     <p id="mstat" class="msg" style="min-height:1.5em"></p>
     <div class="bar"><button class="btn" value="send" style="background:#12b76a">Send prompt</button><button class="btn ghost" value="cancel" formnovalidate>Close</button></div>`;
+  // when both Daraja and Kopo Kopo are set up, let staff choose; with only one, nothing extra is shown
+  db.functions.invoke("stk-push", { body: { action: "providers" } }).then(r => { const p = r.data && r.data.providers; if (!p || p.length < 2) return;
+    f.elements.provider.innerHTML = p.map(x => `<option value="${esc(x.id)}" ${x.id === r.data.default ? "selected" : ""}>${esc(x.label)}</option>`).join(""); $("#viaWrap").hidden = false; }).catch(() => {});
   f.onsubmit = async e => {
     if (e.submitter.value !== "send") { route(); return; }
     e.preventDefault(); const st = $("#mstat"), btn = e.submitter; btn.disabled = true; st.style.color = ""; st.textContent = "Sending…";
-    const res = await db.functions.invoke("stk-push", { body: { phone: f.elements.phone.value, amount: Number(f.elements.amount.value), ref: f.elements.ref.value, purpose: f.elements.purpose.value, auto_record: f.elements.auto.checked } });
+    const res = await db.functions.invoke("stk-push", { body: { phone: f.elements.phone.value, amount: Number(f.elements.amount.value), ref: f.elements.ref.value, purpose: f.elements.purpose.value, auto_record: f.elements.auto.checked, provider: $("#viaWrap").hidden ? undefined : f.elements.provider.value, customer_name: pre.name || "" } });
     if (res.error || !res.data || !res.data.ok) { st.style.color = "#b42318"; st.textContent = await invokeErr(res); btn.disabled = false; return; }
     st.textContent = "Prompt sent. Ask the customer to check their phone and enter their PIN…";
     const id = res.data.public_id;
@@ -479,13 +507,29 @@ async function mpayPage() {
   const rows = must(await db.from("mpesa_requests").select("*").order("id", { ascending: false }).limit(60)) || [];
   $("#view").innerHTML = `<h2>M-Pesa checkout</h2><p style="color:var(--mut)">Send a payment prompt to a customer's phone. Prompts from repair and job rows are linked to that job card or job automatically.</p>
     <div class="bar"><button class="btn" id="np" style="background:#12b76a">+ New payment request</button></div>
-    <div class="wrap"><table><thead><tr><th>Time</th><th>Phone</th><th>Amount</th><th>For</th><th>Source</th><th>Status</th><th>Receipt</th><th></th></tr></thead><tbody id="tb">
-    ${rows.map((r, i) => `<tr><td>${esc(String(r.created_at).slice(0, 16).replace("T", " "))}</td><td>${esc(r.phone)}</td><td class="n">${kes(r.amount)}</td><td>${esc(r.ref || r.purpose || "")}</td><td>${esc(r.source)}</td>
+    <div id="k2card"></div>
+    <div class="wrap"><table><thead><tr><th>Time</th><th>Phone</th><th>Amount</th><th>For</th><th>Source</th><th>Via</th><th>Status</th><th>Receipt</th><th></th></tr></thead><tbody id="tb">
+    ${rows.map((r, i) => `<tr><td>${esc(String(r.created_at).slice(0, 16).replace("T", " "))}</td><td>${esc(r.phone)}</td><td class="n">${kes(r.amount)}</td><td>${esc(r.ref || r.purpose || "")}</td><td>${esc(r.source)}</td><td>${r.provider === "kopokopo" ? "Kopo Kopo" : "Daraja"}</td>
     <td><span class="tag ${r.status === "Success" ? "ok" : r.status === "Pending" ? "" : "bad"}">${esc(r.status)}</span></td><td>${esc(r.mpesa_receipt || "")}</td>
-    <td>${r.status === "Pending" ? `<button class="btn sm ghost" data-chk="${i}">Check</button>` : ""}</td></tr>`).join("") || `<tr><td colspan="8">No payment requests yet.</td></tr>`}</tbody></table></div>`;
+    <td>${r.status === "Pending" ? `<button class="btn sm ghost" data-chk="${i}">Check</button>` : ""}</td></tr>`).join("") || `<tr><td colspan="9">No payment requests yet.</td></tr>`}</tbody></table></div>`;
   $("#np").onclick = () => mpayDialog({});
+  if (can("users.manage")) k2Card();
   $("#tb").onclick = async e => { const b = e.target.closest("[data-chk]"); if (!b) return; const r = await db.functions.invoke("stk-push", { body: { action: "check", public_id: rows[b.dataset.chk].public_id } });
     toast(r.error ? "Could not check" : "Status: " + (r.data?.status || "Pending")); route(); };
+}
+
+// Kopo Kopo: one-time "connect my till" for the owner (so every payment to the till appears on the M-Pesa reconcile page)
+async function k2Card() {
+  const box = $("#k2card"); if (!box) return;
+  const r = await db.functions.invoke("stk-push", { body: { action: "k2_status" } });
+  if (r.error || !r.data || !r.data.ok) { box.innerHTML = ""; return; }   // Kopo Kopo not set up: show nothing
+  box.innerHTML = `<div class="card" style="margin:10px 0"><b>Kopo Kopo till ${esc(r.data.till)}</b> <span class="tag ${r.data.env === "production" ? "ok" : ""}">${esc(r.data.env)}</span>
+    <p style="margin:6px 0;color:var(--mut)">Payment prompts can be sent through Kopo Kopo (choose it in the request form). To also list every payment customers make directly to your till, connect it once. Do this once per Kopo Kopo account, not each time.</p>
+    <button class="btn sm" id="k2sub">Connect till payments</button> <span id="k2msg" class="msg"></span></div>`;
+  $("#k2sub").onclick = async e => { e.target.disabled = true; $("#k2msg").textContent = "Connecting…";
+    const x = await db.functions.invoke("stk-push", { body: { action: "k2_subscribe" } });
+    if (x.error) { $("#k2msg").style.color = "#b42318"; $("#k2msg").textContent = await fnMsg(x); e.target.disabled = false; return; }
+    $("#k2msg").style.color = "#067647"; $("#k2msg").textContent = (x.data && x.data.message) || "Connected."; };
 }
 
 // ---- SMS (owner) --------------------------------------------------------------------------
@@ -528,26 +572,64 @@ function simpleDialog(html, onClose) {
   const dlg = document.createElement("dialog"); dlg.innerHTML = `<form method="dialog" style="display:grid;gap:10px;min-width:min(420px,86vw)">${html}</form>`;
   document.body.appendChild(dlg); dlg.showModal(); dlg.onclose = async () => { const f = dlg.querySelector("form"), v = dlg.returnValue; const vals = Object.fromEntries([...f.elements].filter(e => e.name).map(e => [e.name, e.value])); dlg.remove(); if (onClose) await onClose(v, vals); }; return dlg;
 }
-function showLogin(email, password, name) {
-  const text = `Franksomi Records login\nWebsite: ${location.href.replace(/[#?].*$/, "").replace(/index\.html$/, "")}\nEmail: ${email}\nTemporary password: ${password}\n(Please change it: press “Password” at the top after you sign in.)`;
-  const d = simpleDialog(`<b>${esc(name)}'s login is ready</b><pre style="white-space:pre-wrap;background:#f4f6f8;padding:10px;border-radius:8px;margin:0">${esc(text)}</pre>
-    <small>This password is shown only now. Copy it and give it to ${esc(name)} privately.</small><div class="bar"><button class="btn" type="button" id="cp">Copy details</button> <button class="btn ghost" value="ok">Done</button></div>`);
+const siteBase = () => (APP_CONFIG.SITE_URL || (location.origin + location.pathname)).replace(/[#?].*$/, "").replace(/index\.html$/, "").replace(/\/?$/, "/");
+const DELIVERY = [["link", "Email them a link so they choose their own password (recommended)"], ["email", "Email them a temporary password"], ["sms", "SMS them a temporary password"], ["show", "Send nothing: I will give them the details myself"]];
+function showLogin(email, password, name, problem) {
+  const text = `Franksomi Records login\nWebsite: ${siteBase()}\nEmail: ${email}\nTemporary password: ${password}\n(They will be asked to choose their own password when they first sign in.)`;
+  const d = simpleDialog(`<b>${esc(name)}'s login is ready</b>${problem ? `<div class="notewarn">${esc(problem)}<br>Give them the details below yourself.</div>` : ""}<pre style="white-space:pre-wrap;background:#f4f6f8;padding:10px;border-radius:8px;margin:0">${esc(text)}</pre>
+    <small>This password is shown only now. Copy it and give it to ${esc(name)} privately. It stops working for anything except choosing their own password.</small><div class="bar"><button class="btn" type="button" id="cp">Copy details</button> <button class="btn ghost" value="ok">Done</button></div>`);
   d.querySelector("#cp").onclick = async e => { try { await navigator.clipboard.writeText(text); e.target.textContent = "Copied ✓"; } catch (_) { e.target.textContent = "Select the text and copy it"; } };
 }
+function showLink(link, name, problem) {
+  const d = simpleDialog(`<b>${esc(name)}'s sign-in link</b><div class="notewarn">${esc(problem)}<br>The account is created. Send them this link yourself (WhatsApp, for example).</div>
+    <textarea readonly rows="4" style="width:100%">${esc(link)}</textarea><small>The link works once and expires soon. If it expires, use “New password” on their row to send a fresh one.</small>
+    <div class="bar"><button class="btn" type="button" id="cp">Copy link</button> <button class="btn ghost" value="ok">Done</button></div>`);
+  d.querySelector("#cp").onclick = async e => { try { await navigator.clipboard.writeText(link); e.target.textContent = "Copied ✓"; } catch (_) { e.target.textContent = "Select the link and copy it"; } };
+}
+// tell the owner what actually happened after the function answers
+function afterDelivery(res, who) {
+  const d = res.delivery, sentWhere = d === "sms" ? "by SMS" : "by email";
+  if (d === "show") return showLogin(who.email, who.password, who.name);
+  if (res.delivered) { simpleDialog(`<b>${d === "link" ? "Invitation sent" : "Details sent"} ✓</b><p style="margin:0">${esc(who.name)} was sent ${d === "link" ? "a sign-in link" : "a temporary password"} ${sentWhere}${d === "sms" ? "" : " (" + esc(who.email) + ")"}.</p>
+      <small>${d === "link" ? "They open the link and choose their own password." : "They will be asked to choose their own password the first time they sign in."}</small><div class="bar"><button class="btn" value="ok">Done</button></div>`); return; }
+  const problem = `Could not send ${sentWhere}: ${res.delivery_error || "unknown problem"}.`;
+  if (d === "link") return showLink(res.link, who.name, problem);
+  showLogin(who.email, who.password, who.name, problem);
+}
+// shared fields: how to deliver, optional phone, temporary password (hidden for the link way)
+function deliveryFields(allowLink) {
+  const opts = DELIVERY.filter(o => allowLink || o[0] !== "link");
+  return `<label>How should they get their details?<select name="d">${opts.map(o => `<option value="${o[0]}">${esc(o[1])}</option>`).join("")}</select></label>
+    <label id="phl">Phone number<input name="ph" type="tel" placeholder="0712 345 678" autocomplete="off"><small id="phh">Optional. Needed only to send an SMS.</small></label>
+    <label id="pwl">Temporary password (8+ characters)<input name="p" required minlength="8" maxlength="72" value="${genPw()}" autocomplete="off"></label>`;
+}
+function wireDelivery(dlg) {
+  const f = dlg.querySelector("form"), sync = () => { const v = f.d.value; f.p.disabled = v === "link"; $("#pwl", dlg).hidden = v === "link"; f.ph.required = v === "sms"; $("#phh", dlg).textContent = v === "sms" ? "Required for SMS." : "Optional. Needed only to send an SMS."; };
+  f.d.onchange = sync; sync();
+}
 function addPersonDialog() {
-  simpleDialog(`<b>Add a person</b><label>Full name<input name="n" required maxlength="80"></label><label>Email (their login)<input name="e" type="email" required autocomplete="off"></label>
+  const dlg = simpleDialog(`<b>Add a person</b><label>Full name<input name="n" required maxlength="80"></label><label>Email (their login)<input name="e" type="email" required autocomplete="off"></label>
     <label>Role<select name="r">${ROLES.slice(1).map(r => `<option value="${r[0]}" ${r[0] === "sales" ? "selected" : ""}>${esc(r[1])}</option>`).join("")}</select></label>
-    <label>Temporary password (8+ characters)<input name="p" required minlength="8" maxlength="72" value="${genPw()}" autocomplete="off"></label>
+    ${deliveryFields(true)}
+    <small>Whichever way you choose, they must pick their own password before they can use anything.</small>
     <div class="bar"><button class="btn" value="ok">Create login</button> <button class="btn ghost" value="cancel" formnovalidate>Cancel</button></div>`, async (v, x) => {
     if (v !== "ok") return;
-    const r = await db.functions.invoke("manage-users", { body: { action: "create", email: x.e, full_name: x.n, role: x.r, password: x.p } });
-    if (r.error) return toast(await fnMsg(r)); showLogin(x.e.trim().toLowerCase(), x.p, x.n.trim()); usersPage(); });
+    const body = { action: "create", email: x.e, full_name: x.n, role: x.r, delivery: x.d, phone: x.ph, redirect_to: siteBase() }; if (x.d !== "link") body.password = x.p;
+    toast("Creating the login…");
+    const r = await db.functions.invoke("manage-users", { body });
+    if (r.error) return toast(await fnMsg(r));
+    afterDelivery(r.data || {}, { email: x.e.trim().toLowerCase(), password: x.p, name: x.n.trim() }); usersPage(); });
+  wireDelivery(dlg);
 }
 function resetPwDialog(u) {
-  simpleDialog(`<b>New password for ${esc(u.full_name || u.email)}</b><label>New temporary password (8+ characters)<input name="p" required minlength="8" maxlength="72" value="${genPw()}" autocomplete="off"></label>
-    <small>They can sign in with it straight away and change it themselves with the “Password” button.</small><div class="bar"><button class="btn" value="ok">Set password</button> <button class="btn ghost" value="cancel" formnovalidate>Cancel</button></div>`, async (v, x) => {
-    if (v !== "ok") return; const r = await db.functions.invoke("manage-users", { body: { action: "reset_password", id: u.id, password: x.p } });
-    if (r.error) return toast(await fnMsg(r)); showLogin(u.email, x.p, u.full_name || u.email); usersPage(); });
+  const dlg = simpleDialog(`<b>New sign-in details for ${esc(u.full_name || u.email)}</b>
+    ${deliveryFields(true).replace('placeholder="0712 345 678"', `placeholder="0712 345 678" value="${esc(u.phone || "")}"`)}
+    <small>Their old password stops working. They must choose a new one of their own the next time they sign in.</small><div class="bar"><button class="btn" value="ok">Continue</button> <button class="btn ghost" value="cancel" formnovalidate>Cancel</button></div>`, async (v, x) => {
+    if (v !== "ok") return; const body = { action: "reset_password", id: u.id, delivery: x.d, phone: x.ph, redirect_to: siteBase() }; if (x.d !== "link") body.password = x.p;
+    toast("Working…"); const r = await db.functions.invoke("manage-users", { body });
+    if (r.error) return toast(await fnMsg(r));
+    afterDelivery(r.data || {}, { email: u.email, password: x.p, name: u.full_name || u.email }); usersPage(); });
+  wireDelivery(dlg);
 }
 $("#chpw").onclick = () => simpleDialog(`<b>Change my password</b><label>New password (8+ characters)<input name="p" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></label>
   <label>Type it again<input name="q" type="password" required autocomplete="new-password"></label><div class="bar"><button class="btn" value="ok">Change</button> <button class="btn ghost" value="cancel" formnovalidate>Cancel</button></div>`, async (v, x) => {
@@ -564,7 +646,7 @@ async function usersPage() {
   $("#view").innerHTML = `<h2>Users &amp; roles</h2>
     <div class="bar"><button class="btn" id="addp">+ Add a person</button></div><p style="color:var(--mut)">Each person has one role. The Owner sets what every role may do in the table below; the changes apply the next time that person opens or refreshes the app. The Owner always has every permission.</p>
     <h3>People</h3><div class="wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Active</th><th>Last sign-in</th><th>Last action</th><th>Actions (7 days)</th><th></th></tr></thead><tbody id="utb">
-    ${us.map((u, i) => `<tr><td><input data-n="${i}" value="${esc(u.full_name || "")}" style="width:150px"></td><td>${esc(u.email)}</td>
+    ${us.map((u, i) => `<tr><td><input data-n="${i}" value="${esc(u.full_name || "")}" style="width:150px">${u.must_change_password ? `<div><span class="badge">Has not chosen a password yet</span></div>` : ""}</td><td>${esc(u.email)}${u.phone ? `<div style="color:var(--mut);font-size:12px">${esc(u.phone)}</div>` : ""}</td>
       <td><select data-r="${i}">${ROLES.map(r => `<option value="${r[0]}" ${r[0] === u.role ? "selected" : ""}>${esc(r[1])}</option>`).join("")}</select></td>
       <td><input type="checkbox" data-a="${i}" ${u.active ? "checked" : ""}></td><td>${esc(when(u.last_sign_in_at))}</td><td>${esc(when(u.last_action))}</td><td class="n">${u.actions_7d}</td>
       <td><button class="btn sm" data-save="${i}">Save</button> <button class="btn sm ghost" data-pw="${i}">New password</button></td></tr>`).join("")}</tbody></table></div>
@@ -636,18 +718,38 @@ async function route() {
 }
 async function start() {
   const { data: { session } } = await db.auth.getSession();
-  if (!session) { $("#app").hidden = true; $("#login").hidden = false; return; }
+  if (!session) { $("#app").hidden = true; $("#login").hidden = false; $("#gateForm").hidden = true; $("#loginForm").hidden = false; return; }
   const acc = await db.rpc("my_access");
   me = acc.data;
-  if (!me || !me.active) { await db.auth.signOut(); $("#app").hidden = true; $("#login").hidden = false; $("#loginMsg").textContent = "This account is switched off. Ask the owner."; return; }
+  if (me && me.active && me.must_change) return passwordGate(session);
+  if (!me || !me.active) { await db.auth.signOut(); $("#app").hidden = true; $("#login").hidden = false; $("#gateForm").hidden = true; $("#loginForm").hidden = false; $("#loginMsg").textContent = "This account is switched off. Ask the owner."; return; }
   me.full_name = me.name;
-  $("#login").hidden = true; $("#app").hidden = false;
+  $("#login").hidden = true; $("#app").hidden = false; $("#gateForm").hidden = true; $("#loginForm").hidden = false;
   $("#who").textContent = `${me.full_name || session.user.email} · ${roleName(me.role)}`;
   $("#nav").innerHTML = navFor().map(([k, l]) => `<a href="#${k}" data-k="${k}">${BRAND.icon(k, 17)}${esc(l)}</a>`).join("");
   await refreshLookups(); route();
 }
+let lastLoginPw = "";
+// shown instead of the app while the owner's temporary password / sign-in link is still the only thing they have
+function passwordGate(session) {
+  me = null; $("#app").hidden = true; $("#login").hidden = false; $("#loginForm").hidden = true; $("#gateForm").hidden = false; $("#gateMsg").textContent = "";
+  $("#gateWho").textContent = `Signed in as ${session.user.email}. Before you start, set a password only you know.`; $("#gateForm").reset();
+}
+$("#gateForm").onsubmit = async e => { e.preventDefault(); const f = e.target, msg = $("#gateMsg"), p = f.p.value;
+  if (p !== f.q.value) return void (msg.textContent = "The two passwords are not the same.");
+  if (p.length < 8) return void (msg.textContent = "Use at least 8 characters.");
+  if (lastLoginPw && p === lastLoginPw) return void (msg.textContent = "Choose a different password from the temporary one.");
+  if (/^(12345678|password|qwerty12|11111111)/i.test(p)) return void (msg.textContent = "That password is too easy to guess.");
+  msg.textContent = "Saving…"; const u = await db.auth.updateUser({ password: p });
+  if (u.error) return void (msg.textContent = /same|different/i.test(u.error.message) ? "Choose a different password from the temporary one." : u.error.message);
+  const ok = await db.rpc("password_changed");
+  if (ok.error || ok.data !== true) return void (msg.textContent = "Your password was not saved. Please try again.");
+  lastLoginPw = ""; start(); };
+$("#gateOut").onclick = async () => { await db.auth.signOut(); lastLoginPw = ""; start(); };
 $("#loginForm").onsubmit = async e => { e.preventDefault(); const f = e.target; const r = await db.auth.signInWithPassword({ email: f.email.value, password: f.password.value });
-  if (r.error) $("#loginMsg").textContent = "Wrong email or password."; else { $("#loginMsg").textContent = ""; start(); } };
+  if (r.error) $("#loginMsg").textContent = "Wrong email or password."; else { $("#loginMsg").textContent = ""; lastLoginPw = f.password.value; start(); } };
 $("#logout").onclick = async () => { await db.auth.signOut(); location.hash = ""; start(); };
+// a sign-in link that is expired or already used comes back with an error in the address
+if (/error_description|otp_expired|access_denied/.test(location.hash)) { $("#loginMsg").textContent = "That sign-in link has expired or was already used. Ask the owner to send you a new one."; history.replaceState(null, "", location.pathname); }
 window.addEventListener("hashchange", () => me && route());
 start();
