@@ -23,6 +23,7 @@
   </form>
   <div id="out" hidden></div>
   <p style="color:var(--mut);font-size:13px;text-align:center">Questions? Call <a href="tel:0711952924">0711 952 924</a> · franksomi@gmail.com</p>
+  <p class="copy">© <span class="yr">2026</span> Franksomi Solution Ltd. All rights reserved.</p>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
@@ -30,4 +31,5 @@
 <script src="vendor/pdf-lib.min.js"></script>
 <script src="pdf.js"></script>
 <script src="portal.js"></script>
+<script>document.querySelectorAll(".yr").forEach(function(e){e.textContent=new Date().getFullYear()})</script>
 </body></html>
