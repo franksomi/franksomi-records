@@ -6,16 +6,26 @@
     "Received": "We have your device.", "Diagnosing": "We are finding out what is wrong.", "Waiting for approval": "We need your OK on the price before we continue.",
     "Waiting for parts": "We are waiting for a spare part to arrive.", "Repairing": "The repair is under way.", "Testing": "We are testing that everything works.",
     "Ready for collection": "Your device is ready. Please come and collect it with your receipt.", "Collected": "Collected. Thank you for choosing us!" };
-  function buildSteps(stage, updates) {
+  const MAIN_JOB = ["Booked", "Site visit", "Quote sent", "In progress", "Testing", "Completed"];
+  const EXPLAIN_JOB = {
+    "Booked": "Your job is booked. We will contact you to arrange the next step.", "Site visit": "We are visiting or planning the site visit.", "Quote sent": "We have sent you our quote. We start once you approve it.",
+    "Waiting for materials": "We are waiting for materials or equipment to arrive.", "In progress": "The work is under way.", "Testing": "We are testing and checking everything.",
+    "On hold": "The job is paused for now. We will tell you when work continues.", "Completed": "The job is complete. Thank you for choosing us!" };
+  function buildSteps(stage, updates, kind) {
     const seen = new Set((updates || []).map(u => u.stage)); seen.add(stage);
     const steps = [];
+    if (kind === "job") {
+      for (const s of MAIN_JOB) { if (s === "In progress") { if (seen.has("Waiting for materials")) steps.push("Waiting for materials"); if (seen.has("On hold")) steps.push("On hold"); } steps.push(s); }
+      const cur = steps.indexOf(stage);
+      return steps.map((s, i) => ({ name: s, state: i < cur ? "done" : i === cur ? "cur" : "todo", text: EXPLAIN_JOB[s] }));
+    }
     for (const s of MAIN) { steps.push(s); if (s === "Diagnosing") { if (seen.has("Waiting for approval")) steps.push("Waiting for approval"); if (seen.has("Waiting for parts")) steps.push("Waiting for parts"); } }
     const cur = steps.indexOf(stage);
     return steps.map((s, i) => ({ name: s, state: i < cur ? "done" : i === cur ? "cur" : "todo", text: EXPLAIN[s] }));
   }
   const kes = v => Number(v || 0).toLocaleString("en-KE", { maximumFractionDigits: 0 });
   const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const api = { buildSteps, MAIN };
+  const api = { buildSteps, MAIN, MAIN_JOB };
   if (typeof module !== "undefined") { module.exports = api; return; }
   if (typeof document === "undefined") return;
   const $ = s => document.querySelector(s);
@@ -23,16 +33,16 @@
   let creds = null;
 
   function show(r) {
-    const steps = buildSteps(r.stage, r.updates);
+    const isJob = r.kind === "job", steps = buildSteps(r.stage, r.updates, isJob ? "job" : "repair");
     const when = iso => new Date(iso).toLocaleString("en-KE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
     const lastAt = {}; (r.updates || []).forEach(u => { if (!lastAt[u.stage] || u.at > lastAt[u.stage]) lastAt[u.stage] = u.at; });
-    $("#out").innerHTML = `<div id="statusdoc"><div class="pdfhead" style="display:flex;align-items:center;gap:10px;padding:6px 2px"><img src="logo.png" alt="" height="34"><div><b>Franksomi Solution Ltd</b><br><small>Repair status · ${esc(new Date().toLocaleDateString("en-KE"))} · Tel 0711 952 924</small></div></div><div class="card"><small>Hello ${esc(r.first_name)} — ${esc(r.job_no)}</small><div class="big">${esc(r.stage)}</div><div>${esc(r.item)}</div>
+    $("#out").innerHTML = `<div id="statusdoc"><div class="pdfhead" style="display:flex;align-items:center;gap:10px;padding:6px 2px"><img src="logo.png" alt="" height="34"><div><b>Franksomi Solution Ltd</b><br><small>${isJob ? "Job status" : "Repair status"} · ${esc(new Date().toLocaleDateString("en-KE"))} · Tel 0711 952 924</small></div></div><div class="card"><small>Hello ${esc(r.first_name)} — ${esc(r.job_no)}</small><div class="big">${esc(r.stage)}</div><div>${esc(r.item)}</div>
       ${BRAND.track(steps)}
-      <small>Received ${esc(r.received_on)}${r.returned_on ? " · collected " + esc(r.returned_on) : ""}</small>
+      <small>${isJob ? "Started" : "Received"} ${esc(r.received_on)}${r.returned_on ? (isJob ? " · completed " : " · collected ") + esc(r.returned_on) : ""}</small>
       ${r.note ? `<div class="note">${esc(r.note)}</div>` : ""}
       <ul class="steps">${steps.map(s => `<li class="${s.state}"><span>${esc(s.name)}<small>${s.state === "cur" ? esc(s.text) : ""}${lastAt[s.name] && s.state !== "todo" ? " " + esc(when(lastAt[s.name])) : ""}</small></span></li>`).join("")}</ul></div>
       <div class="card" style="margin-top:12px"><b>Your bill</b>
-        <div class="row"><span>Total (parts + labour)</span><b>KES ${kes(r.total)}</b></div>
+        <div class="row"><span>${isJob ? "Contract price" : "Total (parts + labour)"}</span><b>KES ${kes(r.total)}</b></div>
         ${Number(r.deposit_held) > 0 ? `<div class="row"><span>Refundable deposit we hold</span><b>KES ${kes(r.deposit_held)}</b></div>` : ""}
         <div class="row"><span>Paid so far</span><b>KES ${kes(r.paid)}</b></div>
         <div class="row"><span>Balance to pay</span><b id="bal">KES ${kes(r.balance_due)}</b></div>
@@ -40,7 +50,7 @@
         <button class="btn" id="pay" style="background:#12b76a">Pay with M-Pesa</button><small style="color:var(--mut)">A payment prompt is sent to the phone number we have for this job. Enter your M-Pesa PIN to confirm.</small><p id="pmsg" class="msg"></p></div>` : `<p class="ok">Nothing left to pay. Thank you!</p>`}
       </div></div><p style="text-align:center"><button class="btn ghost" id="pdfbtn" type="button">Download status as PDF</button> <small id="pdfmsg" style="display:block;color:var(--mut)"></small></p>`;
     $("#out").hidden = false;
-    $("#pdfbtn").onclick = async () => { const m = $("#pdfmsg"); m.textContent = "Making the PDF…"; try { await PDF.download($("#statusdoc"), r.job_no + " Franksomi repair status.pdf"); m.textContent = "Saved."; } catch (e) { console.error(e); m.textContent = "Your browser could not make the PDF. Use your browser menu → Print → Save as PDF."; } };
+    $("#pdfbtn").onclick = async () => { const m = $("#pdfmsg"); m.textContent = "Making the PDF…"; try { await PDF.download($("#statusdoc"), r.job_no + (isJob ? " Franksomi job status.pdf" : " Franksomi repair status.pdf")); m.textContent = "Saved."; } catch (e) { console.error(e); m.textContent = "Your browser could not make the PDF. Use your browser menu → Print → Save as PDF."; } };
     const pay = $("#pay"); if (pay) pay.onclick = () => startPay(Number($("#amt").value));
   }
 
@@ -50,7 +60,7 @@
     if (r.error) { $("#err").textContent = "Something went wrong. Please try again."; return; }
     const d = r.data;
     if (d.error === "locked") { $("#err").textContent = "Too many wrong tries. Please wait an hour, or call the shop."; return; }
-    if (d.error) { $("#err").textContent = "We could not find that job card with that phone number. Check the number on your receipt."; return; }
+    if (d.error) { $("#err").textContent = "We could not find that job with that phone number. Check the number on your receipt or job card."; return; }
     creds = { job, phone }; show(d);
   }
 
