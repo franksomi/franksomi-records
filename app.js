@@ -306,7 +306,7 @@ function printCard(kind, r) {
 // ---- shared helpers for reports -------------------------------------------------
 // Opens the document in a NEW TAB (print.html) with Print and Download PDF buttons. If the browser blocks the new tab, it is shown on this page instead.
 function printHtml(html, filename = "Franksomi document.pdf") {
-  const body = `<div id="docbody">${html}<div class="docfoot"><img src="logo.png" alt="" height="26"><b>${BRAND.TAGLINE}</b><span>${SHOP.name} · ${SHOP.phone} · ${SHOP.email}</span></div></div>`;
+  const body = `<div id="docbody">${html}<div class="docfoot"><img src="logo.png" alt="" height="26"><b>${BRAND.TAGLINE}</b><span>${SHOP.name} · ${SHOP.phone} · ${SHOP.email}</span></div><div class="doccopy">© ${new Date().getFullYear()} ${SHOP.name}. All rights reserved.</div></div>`;
   let tab = null;
   try { localStorage.setItem("fk_print", JSON.stringify({ html: body, filename })); tab = window.open("print.html", "_blank"); } catch (_) { tab = null; }
   if (tab) return;
