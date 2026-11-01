@@ -62,5 +62,9 @@ header{border-bottom:3px solid transparent;border-image:linear-gradient(90deg,va
 body.printpage{background:#e9edf2;padding:16px 8px}body.printpage .doc{box-shadow:0 2px 14px rgba(15,23,42,.18);border-radius:6px;min-height:200px}
 .multi{grid-column:1/-1;border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px 10px;display:flex;gap:6px 18px;flex-wrap:wrap;margin:0}.multi legend{padding:0 6px;font-size:13px;color:var(--mut)}.multi label{display:flex;gap:6px;align-items:center;margin:0}.multi input{width:auto}
 .btn.wabtn{background:#128c7e;color:#fff;border:0;font-weight:600}.btn.wabtn:hover{background:#075e54}
+.btn.ghost{background:var(--card);color:var(--txt);border:1px solid var(--mut)}.btn.ghost:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+header .btn.ghost,.hero .btn.ghost{background:transparent;color:#fff;border:1px solid #fff}header .btn.ghost:hover{background:rgba(255,255,255,.12);color:#fff}
+.copy{display:block;text-align:center;color:var(--mut);font-size:12px;margin:0;padding:18px 12px}form .copy{padding:10px 0 0}
+.doc .doccopy{margin-top:6px;text-align:center;font-size:10px;color:#666}
 @media print{body{background:#fff}body>*:not(#print){display:none!important}#print{display:block!important}.noprint{display:none!important}.doc{padding:0}}
 [hidden]{display:none!important}
