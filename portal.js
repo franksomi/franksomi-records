@@ -48,7 +48,7 @@
         <div class="row"><span>Balance to pay</span><b id="bal">KES ${kes(r.balance_due)}</b></div>
         ${Number(r.balance_due) > 0 ? `<div class="noprint" style="margin-top:12px;display:grid;gap:8px"><label>Amount to pay now (KES)<input id="amt" type="number" min="1" max="${Math.floor(r.balance_due)}" step="1" value="${Math.floor(r.balance_due)}"></label>
         <button class="btn" id="pay" style="background:#12b76a">Pay with M-Pesa</button><small style="color:var(--mut)">A payment prompt is sent to the phone number we have for this job. Enter your M-Pesa PIN to confirm.</small><p id="pmsg" class="msg"></p></div>` : `<p class="ok">Nothing left to pay. Thank you!</p>`}
-      </div></div><p style="text-align:center"><button class="btn ghost" id="pdfbtn" type="button">Download status as PDF</button> <small id="pdfmsg" style="display:block;color:var(--mut)"></small></p>`;
+      </div><p class="copy" style="padding:8px">© ${new Date().getFullYear()} Franksomi Solution Ltd. All rights reserved.</p></div><p style="text-align:center"><button class="btn ghost" id="pdfbtn" type="button">Download status as PDF</button> <small id="pdfmsg" style="display:block;color:var(--mut)"></small></p>`;
     $("#out").hidden = false;
     $("#pdfbtn").onclick = async () => { const m = $("#pdfmsg"); m.textContent = "Making the PDF…"; try { await PDF.download($("#statusdoc"), r.job_no + (isJob ? " Franksomi job status.pdf" : " Franksomi repair status.pdf")); m.textContent = "Saved."; } catch (e) { console.error(e); m.textContent = "Your browser could not make the PDF. Use your browser menu → Print → Save as PDF."; } };
     const pay = $("#pay"); if (pay) pay.onclick = () => startPay(Number($("#amt").value));
