@@ -45,9 +45,11 @@ const T = {
       ["payment", "Payment method", "select:" + PAY.join()], ["mpesa_ref", "M-Pesa code (if paid by M-Pesa)", "text"], ["cost_new", "Unit cost for an item not in stock (KES)", "number", { owner: 1 }], ["notes", "Notes", "text", { full: 1 }]] },
   inventory: { title: "Inventory", view: "v_stock", perm: "inventory", table: "inventory_items", order: "code",
     cols: [["code", "Code"], ["description", "Description"], ["stock_type", "Type"], ["qty_received", "Received", "n"], ["qty_sold", "Sold", "n"], ["qty_used", "Used", "n"], ["on_hand", "On hand", "n"],
-      ["unit_cost", "Unit cost", "n", "owner"], ["selling_price", "Selling price", "n"], ["stock_value", "Stock value", "n", "owner"], ["supplier", "Supplier"], ["status", "Status", "tag"]],
+      ["unit_cost", "Unit cost", "n", "owner"], ["selling_price", "Selling price", "n"], ["stock_value", "Stock value", "n", "owner"], ["supplier", "Supplier"], ["shop_visible", "Online", "yn"], ["status", "Status", "tag"]],
     fields: [["description", "Description (keep unique)", "text", { req: 1, full: 1 }], ["stock_type", "Type", "list:stock_type", { req: 1 }], ["qty_received", "Qty received (total in)", "number"],
-      ["unit_cost", "Unit cost (KES)", "number", { owner: 1 }], ["selling_price", "Selling price (KES)", "number"], ["supplier_id", "Supplier", "supplier"], ["reorder_level", "Reorder level", "number"], ["notes", "Notes", "text", { full: 1 }]] },
+      ["unit_cost", "Unit cost (KES)", "number", { owner: 1 }], ["selling_price", "Selling price (KES)", "number"], ["supplier_id", "Supplier", "supplier"], ["reorder_level", "Reorder level", "number"], ["notes", "Notes", "text", { full: 1 }],
+      ["shop_visible", "Sell this item in the online shop (needs a selling price and stock)", "check"], ["shop_featured", "Show as Popular on the website", "check"],
+      ["shop_title", "Shop name (leave empty to use the description)", "text"], ["shop_image", "Photo (web address, or choose a file to upload)", "image", { full: 1 }], ["shop_desc", "Shop description (one or two sentences)", "text", { full: 1 }]] },
   jobs: { title: "Field Jobs", view: "v_jobs", perm: "jobs", table: "field_jobs", order: "id", print: "fieldcard", mpay: "job",
     cols: [["job_no", "Job No."], ["started_on", "Started"], ["client_name", "Client"], ["site", "Site"], ["job_type", "Type"], ["contract_price", "Price", "n"], ["paid", "Paid", "n"], ["balance", "Balance", "n"], ["job_profit", "Job profit", "n", "owner"], ["status", "Stage", "tag"]],
     fields: [["started_on", "Date started", "date", { today: 1 }], ["client_name", "Client name", "text", { req: 1 }], ["contact", "Contact", "text"], ["site", "Site / location", "text"],
@@ -66,14 +68,18 @@ const T = {
     cols: [["done_on", "Date"], ["service", "Service"], ["customer", "Customer"], ["qty", "Qty", "n"], ["unit_price", "Price", "n"], ["total", "Total", "n"], ["payment", "Payment"], ["mpesa_ref", "M-Pesa code"]],
     fields: [["done_on", "Date", "date", { today: 1 }], ["service", "Service", "service"], ["customer", "Customer (optional)", "text"], ["qty", "Qty (pages, minutes ÷ 30, items)", "number", { req: 1 }],
       ["unit_price", "Price each (KES)", "number", { req: 1 }], ["payment", "Payment method", "select:" + PAY.join()], ["mpesa_ref", "M-Pesa code (if paid by M-Pesa)", "text"], ["notes", "Notes", "text", { full: 1 }]] },
+  enquiries: { title: "Website enquiries", view: "enquiries", perm: "orders", table: "enquiries", order: "id",
+    cols: [["created_at", "Received", "dt"], ["name", "Name"], ["phone", "Phone"], ["topic", "About"], ["message", "Message"], ["status", "Status"], ["source", "From"]],
+    fields: [["name", "Name", "text", { req: 1 }], ["phone", "Phone", "text", { req: 1 }], ["topic", "About", "text"], ["message", "Message", "text", { full: 1 }],
+      ["status", "Status", "select:New,Contacted,Quoted,Won,Closed", { def: "New" }], ["notes", "Our notes (private)", "text", { full: 1 }]] },
   suppliers: { title: "Suppliers", view: "suppliers", perm: "suppliers", table: "suppliers", order: "name",
     cols: [["name", "Supplier"], ["contact_person", "Contact person"], ["phone", "Phone"], ["location", "Location"], ["supplies", "What they supply"]],
     fields: [["name", "Supplier name", "text", { req: 1 }], ["contact_person", "Contact person", "text"], ["phone", "Phone", "text"], ["location", "Location", "text"], ["supplies", "What they supply", "text", { full: 1 }], ["notes", "Notes", "text", { full: 1 }]] },
 };
-const NAV = [["dashboard", "Dashboard"], ["repairs", "Repairs", "repairs.view"], ["sales", "Sales", "sales.view"], ["services", "Printing & Cyber", "services.view"], ["jobs", "Field Jobs", "jobs.view"],
+const NAV = [["dashboard", "Dashboard"], ["repairs", "Repairs", "repairs.view"], ["sales", "Sales", "sales.view"], ["orders", "Shop orders", "orders.view"], ["enquiries", "Enquiries", "orders.view"], ["services", "Printing & Cyber", "services.view"], ["jobs", "Field Jobs", "jobs.view"],
   ["docs", "Quote / Invoice / Receipt", "docs.view"], ["income", "Income", "income.view"], ["expenses", "Expenses", "expenses.view"], ["inventory", "Inventory", "inventory.view"],
   ["mpay", "M-Pesa checkout", "mpay.use"], ["sms", "SMS messages", "sms.manage"], ["eod", "End of day", "eod.view"], ["monthly", "Monthly report", "reports.view+costs.view"], ["summary", "Year summary", "reports.view+costs.view"],
-  ["mpesa", "M-Pesa reconcile", "reconcile.use"], ["suppliers", "Suppliers"], ["lists", "Lists", "lists.manage"], ["audit", "Activity log", "audit.view"], ["users", "Users & roles", "users.manage"]];
+  ["mpesa", "M-Pesa reconcile", "reconcile.use"], ["suppliers", "Suppliers"], ["lists", "Lists", "lists.manage"], ["zones", "Delivery areas", "shop.manage"], ["audit", "Activity log", "audit.view"], ["users", "Users & roles", "users.manage"]];
 const navFor = () => NAV.filter(n => !n[2] || can(n[2]));
 
 // ---- form widgets -----------------------------------------------------------
@@ -84,6 +90,7 @@ function widget([k, l, t, o = {}], v) {
   if (t === "text") inner = `<input name="${k}" value="${esc(val)}" ${req} autocomplete="off">`;
   else if (t === "number") inner = `<input name="${k}" type="number" step="any" min="0" value="${esc(val)}" ${req} inputmode="decimal">`;
   else if (t === "check") return `<label class="full" style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="${k}" ${v ? "checked" : ""} style="width:auto"> ${esc(l)}</label>`;
+  else if (t === "image") return `<label class="${cls}">${esc(l)}<input name="${k}" value="${esc(val)}" placeholder="https://…" autocomplete="off"><span style="display:flex;gap:10px;align-items:center;margin-top:6px"><input type="file" accept="image/*" data-img="${k}" style="flex:1"><img alt="" data-prev="${k}" src="${esc(val)}" style="height:44px;width:44px;object-fit:cover;border-radius:8px;${val ? "" : "display:none"}"></span><small data-imsg="${k}" style="color:var(--mut)"></small></label>`;
   else if (t.startsWith("multi:")) { const have = Array.isArray(v) ? v : []; return `<fieldset class="full multi"><legend>${esc(l)}</legend>${t.slice(6).split("|").map(x => `<label><input type="checkbox" name="${k}" value="${esc(x)}" ${have.includes(x) ? "checked" : ""}> ${esc(x)}</label>`).join("")}</fieldset>`; }
   else if (t === "date") inner = `<input name="${k}" type="date" value="${esc(val)}" ${req}>`;
   else if (t.startsWith("select:")) { const sv = val || o.def || ""; inner = `<select name="${k}">${o.def ? "" : `<option value=""></option>`}${t.slice(7).split(",").map(x => `<option ${x === sv ? "selected" : ""}>${esc(x)}</option>`).join("")}</select>`; }
@@ -138,6 +145,16 @@ async function openForm(key, row) {
     }
     dlg.close(); toast("Saved"); route();
   };
+  f.querySelectorAll("[data-img]").forEach(inp => inp.onchange = async () => {
+    const file = inp.files[0], msg = f.querySelector(`[data-imsg="${inp.dataset.img}"]`); if (!file) return;
+    if (!db.storage) { msg.textContent = "Photo upload is not available here. Paste a web address instead."; return; }
+    if (file.size > 3 * 1024 * 1024) { msg.textContent = "That photo is over 3 MB. Please choose a smaller one."; inp.value = ""; return; }
+    msg.textContent = "Uploading…"; const path = Date.now() + "-" + file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").slice(-60);
+    const up = await db.storage.from("shop").upload(path, file, { contentType: file.type, upsert: false });
+    if (up.error) { msg.textContent = "Upload failed: " + up.error.message + " (run database/shop_storage.sql once, see the guide)"; return; }
+    const url = db.storage.from("shop").getPublicUrl(path).data.publicUrl; f.elements[inp.dataset.img].value = url;
+    const pv = f.querySelector(`[data-prev="${inp.dataset.img}"]`); pv.src = url; pv.style.display = ""; msg.textContent = "Uploaded.";
+  });
   const sv = f.querySelector("[data-svc]"); if (sv) sv.onchange = () => { const o = sv.selectedOptions[0]; if (o && o.dataset.price && !row) f.elements.unit_price.value = o.dataset.price; };
   dlg.showModal();
 }
@@ -151,7 +168,7 @@ async function tablePage(key) {
   const head = cols.map(c => `<th>${esc(c[1])}</th>`).join("") + "<th></th>";
   const body = rows.map((r, i) => `<tr class="${r.status === "REORDER" ? "low" : ""}">${cols.map(([k, , t]) => {
     const v = r[k]; if (t === "tag") return `<td><span class="tag ${v === "REORDER" || v === "In shop" ? "bad" : "ok"}">${esc(v)}</span></td>`;
-    return `<td class="${t === "n" ? "n" : ""}">${t === "n" ? kes(v) : esc(v)}</td>`; }).join("")}
+    return `<td class="${t === "n" ? "n" : ""}">${t === "n" ? kes(v) : t === "dt" ? esc(String(v || "").replace("T", " ").slice(0, 16)) : t === "yn" ? (v ? "Yes" : "") : esc(v)}</td>`; }).join("")}
     <td>${pm(def, "edit") ? `<button class="btn sm" data-edit="${i}">Edit</button>` : ""} ${def.print ? `<button class="btn sm pbtn" data-print="${i}">Print card</button>` : ""}
     ${def.mpay && can("mpay.use") ? `<button class="btn sm" style="background:#12b76a" data-pay="${i}">M-Pesa</button>` : ""}${def.mpay === "repair" ? ` <button class="btn sm wabtn" data-wa="${i}">Send tracking link</button>` : ""}
     ${pm(def, "delete") ? `<button class="btn sm warn" data-del="${i}">Delete</button>` : ""}</td></tr>`).join("");
@@ -176,6 +193,84 @@ async function tablePage(key) {
   };
 }
 
+
+// ---- online shop orders -----------------------------------------------------
+const ORDER_FLOW = { delivery: ["Placed", "Confirmed", "Packed", "Dispatched", "Out for delivery", "Delivered"], pickup: ["Placed", "Confirmed", "Packed", "Ready for pickup", "Collected"] };
+const orderNo = id => "ORD-" + String(id).padStart(4, "0");
+const trackUrl = no => new URL("track.html", (window.APP_CONFIG && APP_CONFIG.SITE_URL) || location.href).href.split("?")[0] + "?order=" + encodeURIComponent(no);
+async function ordersPage() {
+  const rows = must(await db.from("shop_orders").select("*").order("id", { ascending: false }).limit(300)) || [];
+  const ids = rows.map(r => r.id), items = ids.length ? (must(await db.from("shop_order_items").select("*").in("order_id", ids)) || []) : [];
+  const by = {}; items.forEach(i => (by[i.order_id] = by[i.order_id] || []).push(i));
+  const open = r => !["Delivered", "Collected", "Cancelled"].includes(r.status);
+  let filt = sessionStorage.getItem("ordf") || "open";
+  const sumItems = r => (by[r.id] || []).map(i => `${i.name} × ${Number(i.qty)}`).join(", ");
+  const draw = () => {
+    const q = ($("#oq") ? $("#oq").value : "").toLowerCase(), list = rows.filter(r => (filt === "all" || (filt === "open" ? open(r) : filt === "done" ? ["Delivered", "Collected"].includes(r.status) : r.status === "Cancelled")) && (!q || (orderNo(r.id) + r.customer_name + r.phone + sumItems(r)).toLowerCase().includes(q)));
+    $("#otb").innerHTML = list.map(r => `<tr><td><b>${orderNo(r.id)}</b></td><td>${esc(String(r.created_at).replace("T", " ").slice(0, 16))}</td><td>${esc(r.customer_name)}<br><small>${esc(r.phone)}</small></td><td><small>${esc(sumItems(r))}</small></td>
+      <td>${r.fulfil === "pickup" ? "Pickup" : esc(r.zone_name || "Delivery")}</td><td class="n">${kes(r.total)}</td><td class="n">${kes(r.paid)}</td><td><span class="tag ${r.status === "Cancelled" ? "bad" : open(r) ? "" : "ok"}">${esc(r.status)}</span></td>
+      <td><button class="btn sm" data-open="${r.id}">Open</button></td></tr>`).join("") || `<tr><td colspan="9"><div class="empty">${BRAND.emptyArt(130)}No orders here yet.</div></td></tr>`;
+    document.querySelectorAll("[data-of]").forEach(b => b.classList.toggle("ghost", b.dataset.of !== filt));
+  };
+  $("#view").innerHTML = `<h2>Shop orders</h2><p style="color:var(--mut);margin-top:0">Orders placed on the website. Move each order along its stages: the customer sees every change on their tracking page and gets the SMS you switched on.</p>
+    <div class="bar"><button class="btn sm" data-of="open">To handle</button><button class="btn sm" data-of="done">Delivered / collected</button><button class="btn sm" data-of="cancelled">Cancelled</button><button class="btn sm" data-of="all">All</button><input id="oq" placeholder="Search order, name, phone, item…" style="max-width:280px"><span style="color:var(--mut)">${rows.filter(open).length} open</span></div>
+    <div class="wrap"><table><thead><tr><th>Order</th><th>Placed</th><th>Customer</th><th>Items</th><th>Delivery</th><th>Total</th><th>Paid</th><th>Stage</th><th></th></tr></thead><tbody id="otb"></tbody></table></div>`;
+  draw(); $("#oq").oninput = draw;
+  $("#view").onclick = e => {
+    const f = e.target.closest("[data-of]"); if (f) { filt = f.dataset.of; sessionStorage.setItem("ordf", filt); draw(); return; }
+    const o = e.target.closest("[data-open]"); if (o) orderDialog(rows.find(r => String(r.id) === o.dataset.open), by[o.dataset.open] || []);
+  };
+}
+function orderDialog(o, items) {
+  const no = orderNo(o.id), flow = ORDER_FLOW[o.fulfil], done = ["Delivered", "Collected"].includes(o.status), canEdit = can("orders.edit");
+  const bal = Math.max(Number(o.total) - Number(o.paid), 0), ph = String(o.phone || "").replace(/\D/g, "");
+  const f = $("#dlgForm"), dis = !canEdit || done ? "disabled" : "";
+  f.innerHTML = `<h2>${no} <span class="tag ${o.status === "Cancelled" ? "bad" : done ? "ok" : ""}">${esc(o.status)}</span></h2>
+    <div class="grid"><div class="full"><b>${esc(o.customer_name)}</b> · <a href="tel:+${ph}">${esc(o.phone)}</a>${o.email ? " · " + esc(o.email) : ""}<br>${o.fulfil === "pickup" ? "<b>Pickup at the shop</b>" : `<b>Deliver to:</b> ${esc(o.zone_name)} · ${esc(o.address || "")}`}${o.notes ? `<br><i>Customer note: ${esc(o.notes)}</i>` : ""}</div>
+    <div class="full wrap"><table><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>${items.map(i => `<tr><td>${esc(i.name)}</td><td class="n">${Number(i.qty)}</td><td class="n">${kes(i.unit_price)}</td><td class="n">${kes(i.qty * i.unit_price)}</td></tr>`).join("")}
+      <tr><td colspan="3">Delivery fee</td><td class="n">${kes(o.delivery_fee)}</td></tr><tr><td colspan="3"><b>Total</b></td><td class="n"><b>${kes(o.total)}</b></td></tr></tbody></table></div>
+    <label>Paid so far (KES) <small>(M-Pesa prompts add themselves; type cash you received)</small><input name="paid" type="number" min="0" step="1" value="${Number(o.paid)}" ${canEdit && !done ? "" : "disabled"}></label>
+    <div style="align-self:end;padding-bottom:10px">Balance to collect: <b>${kes(bal)}</b> · ${o.pay_method === "mpesa_now" ? "customer chose M-Pesa now" : "customer pays on " + (o.fulfil === "pickup" ? "pickup" : "delivery")}</div>
+    <label>Stage (customer sees this)<select name="status" ${dis}>${[...flow, "Cancelled"].map(s => `<option ${s === o.status ? "selected" : ""}>${s}</option>`).join("")}</select></label>
+    <label>Message to customer (shown on the tracking page)<input name="customer_note" value="${esc(o.customer_note || "")}" ${dis}></label>
+    ${o.fulfil === "delivery" ? `<label>Rider / courier name<input name="courier" value="${esc(o.courier || "")}" ${dis}></label><label>Rider / courier phone<input name="courier_phone" value="${esc(o.courier_phone || "")}" ${dis}></label><label class="full">Courier reference / waybill (optional)<input name="tracking_ref" value="${esc(o.tracking_ref || "")}" ${dis}></label>` : ""}
+    <label class="full" style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="sms_optout" ${o.sms_optout ? "checked" : ""} style="width:auto" ${canEdit ? "" : "disabled"}> Do NOT send this customer SMS updates</label>
+    ${done ? `<p class="full" style="color:var(--mut)">Delivered orders are final: the sale and stock were recorded on ${esc(o.delivered_on || "")}.</p>` : ""}</div>
+    <div class="bar" style="margin-top:14px">${canEdit && !done ? `<button class="btn" value="save">Save</button>` : ""}${canEdit && !done && o.status !== "Cancelled" && flow.indexOf(o.status) < flow.length - 1 ? `<button class="btn" style="background:#12b76a" value="next">Save and move to “${flow[flow.indexOf(o.status) + 1]}”</button>` : ""}
+      ${can("mpay.use") && bal > 0 && o.status !== "Cancelled" ? `<button class="btn" type="button" id="opay" style="background:#12b76a">M-Pesa prompt</button>` : ""}<a class="btn wabtn" target="_blank" rel="noopener" href="https://wa.me/${ph.replace(/^0/, "254")}?text=${encodeURIComponent(`Hello ${String(o.customer_name).split(" ")[0]}, about your Franksomi order ${no}: ${trackUrl(no)}`)}">WhatsApp</a>
+      ${can("orders.delete") ? `<button class="btn warn" value="del" formnovalidate>Delete</button>` : ""}<button class="btn ghost" value="cancel" formnovalidate>Close</button></div>`;
+  const dlg = $("#dlg"); const op = $("#opay"); if (op) op.onclick = () => { dlg.close(); mpayDialog({ phone: o.phone, amount: Math.floor(bal), ref: no, purpose: "Shop order " + no, auto: true, name: o.customer_name }); };
+  f.onsubmit = async e => {
+    const act = e.submitter && e.submitter.value; if (act === "cancel" || !act) return;
+    e.preventDefault();
+    if (act === "del") { if (!confirm("Delete this order for good? Use Cancelled instead if you want to keep a record.")) return; const r = await db.from("shop_orders").delete().eq("id", o.id); if (r.error) return toast(r.error.message); dlg.close(); return route(); }
+    const el = f.elements; let status = el.status.value; if (act === "next") status = flow[flow.indexOf(o.status) + 1];
+    const paid = Number(el.paid.value || 0);
+    if (status === "Cancelled" && Number(o.paid) > 0 && !confirm(`The customer already paid KES ${kes(o.paid)}. Cancel anyway? You must refund them yourself by M-Pesa.`)) return;
+    if (["Delivered", "Collected"].includes(status) && !confirm(`Mark ${no} as ${status.toLowerCase()}?\nThis records the sale, takes the items out of stock${Number(o.total) - paid > 0 ? `, and counts the unpaid KES ${kes(Number(o.total) - paid)} as cash received` : ""}. It cannot be undone.`)) return;
+    const upd = { status, customer_note: el.customer_note.value.trim() || null, paid, sms_optout: el.sms_optout.checked };
+    if (el.courier) { upd.courier = el.courier.value.trim() || null; upd.courier_phone = el.courier_phone.value.trim() || null; upd.tracking_ref = el.tracking_ref.value.trim() || null; }
+    const r = await db.from("shop_orders").update(upd).eq("id", o.id).select("id"); if (r.error) return toast(r.error.message);
+    if (!r.data || !r.data.length) return toast("You can't change this order.");
+    dlg.close(); toast("Saved"); route();
+  };
+  dlg.showModal();
+}
+async function zonesPage() {
+  const z = must(await db.from("delivery_zones").select("*").order("sort", { ascending: true })) || [];
+  $("#view").innerHTML = `<h2>Delivery areas</h2><p style="color:var(--mut);margin-top:0">What customers choose at checkout on the website. The fee is added to the order. “Pickup” areas are free collections at the shop. Switch an area off to hide it. These fees are examples: set your own.</p>
+    <div class="wrap"><table><thead><tr><th>Area</th><th>Kind</th><th>Fee (KES)</th><th>Delivery time shown</th><th>Order</th><th>On</th><th></th></tr></thead><tbody>${z.map(x => `<tr data-z="${x.id}"><td><input name="name" value="${esc(x.name)}"></td>
+      <td><select name="kind"><option value="delivery" ${x.kind === "delivery" ? "selected" : ""}>Delivery</option><option value="pickup" ${x.kind === "pickup" ? "selected" : ""}>Pickup</option></select></td><td><input name="fee" type="number" min="0" step="1" value="${x.fee}" style="width:100px"></td>
+      <td><input name="eta" value="${esc(x.eta || "")}"></td><td><input name="sort" type="number" step="1" value="${x.sort}" style="width:70px"></td><td><input name="active" type="checkbox" ${x.active ? "checked" : ""} style="width:auto"></td><td><button class="btn sm" data-save>Save</button> <button class="btn sm warn" data-del>Delete</button></td></tr>`).join("")}</tbody></table></div>
+    <form id="zadd" class="bar"><input name="name" placeholder="New area (for example Estate X, by rider)" required><input name="fee" type="number" min="0" step="1" placeholder="Fee" style="width:100px" required><input name="eta" placeholder="Delivery time, e.g. Same day"><button class="btn sm">Add area</button></form>`;
+  $("#view").onclick = async e => {
+    const tr = e.target.closest("tr[data-z]"); if (!tr) return; const g = n => tr.querySelector(`[name=${n}]`);
+    if (e.target.closest("[data-save]")) { const r = await db.from("delivery_zones").update({ name: g("name").value.trim(), kind: g("kind").value, fee: Number(g("fee").value || 0), eta: g("eta").value.trim() || null, sort: Number(g("sort").value || 0), active: g("active").checked }).eq("id", Number(tr.dataset.z)); return r.error ? toast(r.error.message) : toast("Saved"); }
+    if (e.target.closest("[data-del]") && confirm("Delete this area? Past orders keep their own copy of the name.")) { const r = await db.from("delivery_zones").delete().eq("id", Number(tr.dataset.z)); return r.error ? toast(r.error.message) : zonesPage(); }
+  };
+  $("#view").onsubmit = async e => { e.preventDefault(); const f = e.target; const r = await db.from("delivery_zones").insert({ name: f.name.value.trim(), kind: "delivery", fee: Number(f.fee.value), eta: f.eta.value.trim() || null, sort: 50 }); if (r.error) toast(r.error.message); else zonesPage(); };
+}
+
 // ---- dashboard --------------------------------------------------------------
 async function dashboard() {
   const yr = Number(sessionStorage.getItem("yr")) || new Date().getFullYear();
@@ -188,7 +283,7 @@ async function dashboard() {
   const pay = sm ? ["cash_in", "mpesa_in", "bank_in"].map((f, i) => ({ n: ["Cash", "M-Pesa", "Bank"][i], c: ["#0d6eae", "#12b76a", "#ff914d"][i], v: (sm.months || []).reduce((s, m) => s + Number(m[f] || 0), 0) })) : null;
   $("#view").innerHTML = `<div class="hero"><div class="row1"><img src="logo.png" alt="" width="64" height="64"><div><h2>${hi}${first ? ", " + esc(first) : ""}</h2><p>${esc(new Date().toLocaleDateString("en-KE", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))} · ${esc(roleName(me.role))}</p><span class="tagline">${BRAND.TAGLINE}</span></div></div></div>
     <div class="bar"><label>Year <input id="yr" type="number" value="${yr}" style="width:100px"></label></div>
-    <div class="cards">${k("Repairs still in shop", d.in_shop, "repairs")}${k("Jobs in progress", d.jobs_open, "jobs")}${k("Items to reorder", d.reorder, "inventory", "o")}</div>
+    <div class="cards">${k("Repairs still in shop", d.in_shop, "repairs")}${k("Jobs in progress", d.jobs_open, "jobs")}${k("Items to reorder", d.reorder, "inventory", "o")}${d.orders_open != null ? k("Online orders to handle", d.orders_open, "orders", d.orders_open ? "o" : "") : ""}${d.enquiries_new ? k("New website enquiries", d.enquiries_new, "enquiries", "o") : ""}</div>
     ${d.owner ? `<div class="cards">${k("Total income (year)", d.income, "income", "g", 1)}${k("Total expenses (year)", d.expenses, "expenses", "o", 1)}${k("Cash profit (year)", d.profit, "profit", "g", 1)}${k("Owed by clients", d.owed, "owed", "o", 1)}${k("Customer deposits held", d.deposits_held, "deposit", "", 1)}</div>`
       : `<p style="color:var(--mut)">Money totals are shown only to roles that may see reports.</p>`}
     <div class="charts">${pipe ? `<div class="panel"><h3>Repairs in the shop, by stage</h3>${pipe}</div>` : ""}${sm ? `<div class="panel"><h3>Money received by payment method (${yr})</h3>${BRAND.donut(pay, "Received")}</div>` : ""}</div>
@@ -574,7 +669,7 @@ function simpleDialog(html, onClose) {
   const dlg = document.createElement("dialog"); dlg.innerHTML = `<form method="dialog" style="display:grid;gap:10px;min-width:min(420px,86vw)">${html}</form>`;
   document.body.appendChild(dlg); dlg.showModal(); dlg.onclose = async () => { const f = dlg.querySelector("form"), v = dlg.returnValue; const vals = Object.fromEntries([...f.elements].filter(e => e.name).map(e => [e.name, e.value])); dlg.remove(); if (onClose) await onClose(v, vals); }; return dlg;
 }
-const siteBase = () => (APP_CONFIG.SITE_URL || (location.origin + location.pathname)).replace(/[#?].*$/, "").replace(/index\.html$/, "").replace(/\/?$/, "/");
+const siteBase = () => (APP_CONFIG.SITE_URL || (location.origin + location.pathname)).replace(/[#?].*$/, "").replace(/(index|app)\.html$/, "").replace(/\/?$/, "/");
 const DELIVERY = [["link", "Email them a link so they choose their own password (recommended)"], ["email", "Email them a temporary password"], ["sms", "SMS them a temporary password"], ["show", "Send nothing: I will give them the details myself"]];
 function showLogin(email, password, name, problem) {
   const text = `Franksomi Records login\nWebsite: ${siteBase()}\nEmail: ${email}\nTemporary password: ${password}\n(They will be asked to choose their own password when they first sign in.)`;
@@ -716,7 +811,7 @@ async function route() {
   if (nv && nv[2] && !can(nv[2]) && !(k === "suppliers")) { $("#view").innerHTML = `<h2>Not allowed</h2><p>Your role (${esc(roleName(me.role))}) does not include this page. Ask the owner if you need it.</p>`; return; }
   const decorate = () => { const h = document.querySelector("#view > h2"); if (h) { const w = document.createElement("div"); w.className = "pagehead"; w.innerHTML = BRAND.icon(k, 22); h.replaceWith(w); w.appendChild(h); } };
   try { if (k === "dashboard") await dashboard(); else if (k === "lists") await listsPage(); else if (k === "docs") await docsPage(); else if (k === "eod") await eodPage(); else if (k === "monthly") await monthlyPage(); else if (k === "summary") await summaryPage();
-    else if (k === "mpesa") await mpesaPage(); else if (k === "mpay") await mpayPage(); else if (k === "sms") await smsPage(); else if (k === "audit") await auditPage(); else if (k === "users") await usersPage(); else if (T[k]) await tablePage(k); decorate(); } catch (e) { console.error(e); }
+    else if (k === "mpesa") await mpesaPage(); else if (k === "mpay") await mpayPage(); else if (k === "sms") await smsPage(); else if (k === "orders") await ordersPage(); else if (k === "zones") await zonesPage(); else if (k === "audit") await auditPage(); else if (k === "users") await usersPage(); else if (T[k]) await tablePage(k); decorate(); } catch (e) { console.error(e); }
 }
 async function start() {
   const { data: { session } } = await db.auth.getSession();

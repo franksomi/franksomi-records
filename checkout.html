@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkout | Franksomi Solution Ltd</title><meta name="description" content="Checkout: delivery or pickup, pay by M-Pesa or on delivery."><meta name="theme-color" content="#0E152B">
+<link rel="icon" href="media/emblem.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap"><link rel="stylesheet" href="web.css">
+</head><body><a class="skip" href="#main">Skip to content</a><div id="siteHeader"></div>
+<section class="shophead"><div class="wrap"><span class="kicker">Almost there</span><h1 style="font-size:clamp(1.8rem,5vw,2.6rem)">Checkout</h1></div></section>
+<main id="main" class="wrap" style="padding:30px 18px 70px">
+<div id="done" hidden></div>
+<div class="two" id="co">
+  <form id="f" novalidate>
+    <div class="card"><h3>Your details</h3>
+      <div class="row2"><label>Full name<input name="name" required autocomplete="name"></label><label>Phone (Safaricom, for M-Pesa and SMS)<input name="phone" type="tel" required autocomplete="tel" placeholder="07xx xxx xxx"></label></div>
+      <label>Email (optional)<input name="email" type="email" autocomplete="email"></label></div>
+    <div class="card" style="margin-top:18px"><h3>Delivery or pickup</h3><div id="fulfil"></div>
+      <div id="addr"><label>Delivery area<select name="zone" id="zone"></select></label><label>Address and landmark<textarea name="address" maxlength="300" placeholder="Estate, building or plot, nearest landmark, and anything that helps the rider find you"></textarea></label></div>
+      <label>Note for us (optional)<input name="notes" maxlength="300"></label></div>
+    <div class="card" style="margin-top:18px"><h3>How will you pay?</h3>
+      <label class="opt"><input type="radio" name="pay" value="mpesa_now" checked><span><b>M-Pesa now</b><small>We send a payment prompt to your phone. Enter your PIN and you are done.</small></span></label>
+      <label class="opt"><input type="radio" name="pay" value="on_delivery"><span><b id="cod">Pay on delivery</b><small>Pay the rider in cash or by M-Pesa when your order arrives.</small></span></label></div>
+    <div class="hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+    <p class="msg" id="err" role="alert"></p>
+    <button class="btn" id="place" type="submit" style="width:100%;margin-top:8px">Place order</button>
+  </form>
+  <aside class="card" style="position:sticky;top:84px"><h3>Your order</h3><div id="lines"></div><div id="totals"></div><p style="color:var(--mut);font-size:.88rem;margin:12px 0 0">The shop confirms the final price and stock when you place the order.</p></aside>
+</div></main>
+<div id="siteFooter"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="config.js"></script><script src="web.js"></script>
+<script>
+(function(){
+  var E=WEB.esc,K=WEB.kes,$=WEB.$,zones=[],lines=[];WEB.chrome("shop.html");
+  function fee(){var f=document.querySelector('input[name=ful]:checked');if(!f||f.value==="pickup")return 0;var z=zones.find(function(z){return String(z.id)===$("#zone").value});return z?Number(z.fee):0}
+  function sums(){var sub=lines.filter(function(l){return!l.gone}).reduce(function(s,l){return s+l.price*l.qty},0),fe=fee();
+    $("#totals").innerHTML='<div class="sumrow"><span>Items</span><span>'+K(sub)+'</span></div><div class="sumrow"><span>Delivery</span><span>'+(fee()?K(fe):"Free")+'</span></div><div class="sumrow t"><span>Total</span><span>'+K(sub+fe)+'</span></div>';return sub+fe}
+  function ful(){var f=document.querySelector('input[name=ful]:checked').value;$("#addr").hidden=f==="pickup";$("#cod").textContent=f==="pickup"?"Pay at pickup":"Pay on delivery";sums()}
+  async function init(){
+    if(!WEB.db){$("#co").innerHTML='<div class="card empty">The online shop is not switched on yet. Please order by <a href="'+WEB.waLink("Hello Franksomi, I would like to order")+'">WhatsApp</a>.</div>';return}
+    lines=await WEB.cartLines();
+    if(!lines.length){$("#co").innerHTML='<div class="card empty"><img src="media/emblem.png" alt="">Your cart is empty.<br><a class="btn" href="shop.html" style="margin-top:14px">Browse the shop</a></div>';return}
+    $("#lines").innerHTML=lines.map(function(l){return '<div class="sumrow"><span>'+E(l.title)+' × '+l.qty+(l.gone?' <b style="color:var(--bad)">(no longer available: remove it)</b>':"")+'</span><span>'+K(l.price*l.qty)+'</span></div>'}).join("");
+    var z=await WEB.db.rpc("shop_zones");zones=z.data||[];var dz=zones.filter(function(x){return x.kind==="delivery"}),pk=zones.filter(function(x){return x.kind==="pickup"})[0];
+    $("#fulfil").innerHTML=(dz.length?'<label class="opt"><input type="radio" name="ful" value="delivery" checked><span><b>Delivery</b><small>To your door. The fee depends on your area.</small></span></label>':"")+
+      '<label class="opt"><input type="radio" name="ful" value="pickup" '+(dz.length?"":"checked")+'><span><b>Pick up at the shop (free)</b><small>'+E(pk&&pk.eta||"We tell you when it is ready.")+'</small></span></label>';
+    $("#zone").innerHTML=dz.map(function(x){return '<option value="'+x.id+'">'+E(x.name)+' · '+K(x.fee)+(x.eta?" · "+E(x.eta):"")+'</option>'}).join("");
+    document.querySelectorAll("input[name=ful]").forEach(function(r){r.onchange=ful});$("#zone").onchange=sums;ful();
+    try{var last=JSON.parse(localStorage.getItem("fk_me")||"null");if(last){$("#f").name.value=last.name||"";$("#f").phone.value=last.phone||""}}catch(_){}
+  }
+  var BAD={name:"Please enter your name.",phone:"Please enter a valid Safaricom phone number (for example 0712 345 678).",no_items:"Your cart is empty.",zone:"Please choose a delivery area.",address:"Please add your delivery address.",too_many:"Too many orders from this phone just now. Please call us on 0711 952 924.",bad_qty:"One quantity is not valid.",bad_request:"Something in the form is not right. Please check it and try again."};
+  $("#f").onsubmit=async function(e){e.preventDefault();var f=e.target,err=$("#err"),btn=$("#place");err.className="msg";err.textContent="";
+    if(lines.some(function(l){return l.gone})){err.className="msg bad";err.textContent="Please remove the unavailable item from your cart (shop page, cart).";return}
+    var fl=document.querySelector('input[name=ful]:checked').value,pay=f.pay.value;btn.disabled=true;btn.textContent="Placing your order…";
+    var body={name:f.name.value,phone:f.phone.value,email:f.email.value,fulfil:fl,zone_id:fl==="delivery"?Number($("#zone").value):null,address:f.address.value,notes:f.notes.value,pay_method:pay,website:f.website.value,items:lines.map(function(l){return{id:Number(l.id),qty:l.qty}})};
+    var r=await WEB.db.rpc("shop_place_order",{p:body});var d=r.data||{};btn.disabled=false;btn.textContent="Place order";
+    if(r.error||!d.ok){err.className="msg bad";err.textContent=d.error==="stock"?(d.name+" has only "+d.available+" left. Please change the quantity in your cart."):d.error==="gone"?"One item is no longer available. Please remove it from your cart.":BAD[d.error]||"We could not place the order. Please try again or call 0711 952 924.";return}
+    WEB.cart.clear();try{localStorage.setItem("fk_me",JSON.stringify({name:f.name.value,phone:f.phone.value}));localStorage.setItem("fk_last",d.order_no)}catch(_){}
+    finish(d,f.phone.value,pay)};
+  async function finish(d,phone,pay){
+    $("#co").hidden=true;var box=$("#done");box.hidden=false;
+    box.innerHTML='<div class="card center" style="max-width:640px;margin:auto"><span class="pill ok">Order placed</span><p class="ordno" style="margin:12px 0 4px">'+E(d.order_no)+'</p><p>Total <b>'+K(d.total)+'</b>. We sent you an SMS. Keep this number: you need it with your phone number to track your order.</p><div id="pstate"></div>'+
+      '<p style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn" id="tl" href="track.html?order='+encodeURIComponent(d.order_no)+'">Track my order</a><a class="btn line" href="shop.html" style="color:var(--txt)">Keep shopping</a></p></div>';
+    try{sessionStorage.setItem("fk_tp",phone)}catch(_){}
+    if(pay==="mpesa_now"){var ps=$("#pstate");ps.innerHTML='<p class="msg" id="pm" role="status"></p><button class="btn green" id="paybtn" type="button" hidden>Try the M-Pesa prompt again</button>';
+      async function go(){$("#paybtn").hidden=true;var res=await WEB.payOrder(d.order_no,phone,d.total,function(t){$("#pm").className="msg";$("#pm").textContent=t});
+        if(res.ok){$("#pm").className="msg ok";$("#pm").textContent=res.review?"We received your payment and will confirm it shortly. Thank you!":"Payment received"+(res.receipt?" ("+res.receipt+")":"")+". Thank you!"}
+        else{$("#pm").className="msg bad";$("#pm").textContent=res.message+" Your order is saved. You can also pay on delivery.";$("#paybtn").hidden=false}}
+      $("#paybtn").onclick=go;go()}
+    else $("#pstate").innerHTML='<p class="msg ok">You will pay when your order arrives.</p>'}
+  init();
+})();
+</script></body></html>

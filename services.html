@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Services | Franksomi Solution Ltd</title><meta name="description" content="Phone, laptop and printer repair, phones and accessories, CCTV and electrical installation, Landlord WiFi, printing and cyber services."><meta name="theme-color" content="#0E152B">
+<link rel="icon" href="media/emblem.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap"><link rel="stylesheet" href="web.css">
+</head><body><a class="skip" href="#main">Skip to content</a><div id="siteHeader"></div>
+
+<section class="shophead"><div class="wrap"><span class="kicker">One shop for all your tech</span><h1 style="font-size:clamp(1.8rem,5vw,2.8rem)">Our services</h1><p>Free diagnosis · Quote first · Job card for every device · SMS updates · Pay by M-Pesa · Receipt every time</p></div></section>
+<main id="main" class="wrap" style="padding:40px 18px 70px"><div id="list" style="display:grid;gap:22px"></div>
+<div class="cta-band" style="margin-top:50px"><div><h2>Not sure what you need?</h2><p style="margin:6px 0 0;color:#c9d6f0">Tell us the problem. We diagnose phones free and quote before any work.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn" href="index.html#contact">Request a quote</a><a class="btn green" target="_blank" rel="noopener" href="https://wa.me/254711952924?text=Hello%20Franksomi%2C%20">WhatsApp us</a></div></div></main>
+<div id="siteFooter"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="config.js"></script><script src="web.js"></script>
+<script>
+(function(){
+  WEB.chrome("services.html");var E=WEB.esc;
+  var S=[["phone","Phone repair","Cracked? Dead? Stuck on logo?","Simu imeharibika? Tuletee.",["Screens, charging ports and batteries","Software, flashing and unlocking","Water damage checks","Free diagnosis, and a quote before any work","Track your repair live and get SMS updates"],"Hello Franksomi, I need a phone repair. "],
+    ["laptop","Laptop and printer repair","Laptop slow? Printer jamming?","Laptop imekataa? Tuletee.",["Laptop screens, keyboards, charging and batteries","Windows installs, virus removal, RAM and SSD upgrades","Printer paper jams, faded or streaky prints","Servicing, cleaning, setup and Wi-Fi printing","Your data is treated with care"],"Hello Franksomi, I need a laptop or printer repair. "],
+    ["plug","Phones, accessories and electronics","New phones, fair prices","Simu mpya? Tuko na. Vitu original, bei poa.",["Genuine smartphones, tested before you leave","Chargers, cables, earphones, power banks and speakers","Matching cases and screen protectors","Shop online with delivery, or collect in store","Receipt every time"],"Hello Franksomi, I am looking for a phone or accessory. "],
+    ["cctv","CCTV installation","See your property from your phone","Linda mali yako 24/7.",["Supply and install for homes, shops, schools and plots","Mobile viewing set up on your phone","Clean cabling and tidy finish","Free site survey and written quote","After-sales support"],"Hello Franksomi, I need a CCTV quote. "],
+    ["bolt","Electrical installation","Safe wiring, neat finish","Stima salama, kazi safi.",["Wiring for homes, shops and new builds","Sockets, lighting, distribution boards and earthing","Faults and repairs","Quoted upfront, with the price in writing","Job tracking with updates to your phone"],"Hello Franksomi, I need an electrical quote. "],
+    ["wifi","Landlord WiFi (hotspot)","Affordable. Fast. Reliable.","Internet ya bei nafuu.",["Hotspot internet for estates, hostels and homes","Join the network, pick a package, pay by M-Pesa","Installation for landlords and property managers","Network design and support"],"Hello Franksomi, I want Landlord WiFi. "],
+    ["printer","Printing and cyber","Prints, forms and online services","Kazi ya cyber? Tuko tayari.",["Typing, printing, copying and scanning","KRA, eCitizen and other online applications","Lamination, binding and passport photos","Student and job-seeker friendly"],"Hello Franksomi, I need a printing or cyber service. "]];
+  document.getElementById("list").innerHTML=S.map(function(s,i){return '<article class="card" style="display:grid;grid-template-columns:auto 1fr;gap:20px"><span class="svc"><span class="ic">'+WEB.svgIcon(s[0],30)+'</span></span><div><h2 style="font-size:1.5rem;margin-bottom:4px">'+E(s[1])+'</h2><p style="margin:0 0 4px;font:600 1rem var(--head)">'+E(s[2])+'</p><p style="color:var(--orange);font:600 .88rem var(--head)">'+E(s[3])+'</p><ul class="ticks">'+s[4].map(function(x){return '<li>'+E(x)+'</li>'}).join("")+'</ul><a class="btn sm green" target="_blank" rel="noopener" href="'+WEB.waLink(s[5])+'">Ask on WhatsApp</a> <a class="btn sm blue" href="index.html#contact">Request a quote</a></div></article>'}).join("");
+})();
+</script></body></html>

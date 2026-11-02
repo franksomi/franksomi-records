@@ -1,35 +1,117 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Franksomi Records</title>
-<link rel="icon" href="logo.png"><link rel="stylesheet" href="style.css">
+<title>Franksomi Solution Ltd | Phone repair, CCTV, electrical, WiFi and online shop in Kenya</title>
+<meta name="description" content="One shop for all your tech: phone and laptop repair, phones and accessories, CCTV, electrical, Landlord WiFi, printing and cyber. Free diagnosis, quote first, SMS updates, pay by M-Pesa. Fixed right. Tracked live.">
+<meta property="og:title" content="Franksomi Solution Ltd: For Quality Solutions in Tech"><meta property="og:description" content="Repairs, accessories, CCTV, electrical and WiFi. Track every repair, job and order live from your phone."><meta property="og:image" content="media/promo-services.jpg"><meta name="theme-color" content="#0E152B">
+<link rel="icon" href="media/emblem.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="web.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"LocalBusiness","name":"Franksomi Solution Ltd","description":"Phone and laptop repair, phones and accessories, CCTV and electrical installation, Landlord WiFi, printing and cyber services.","telephone":"+254711952924","email":"franksomi@gmail.com","address":{"@type":"PostalAddress","addressCountry":"KE"},"slogan":"For Quality Solutions in Tech"}</script>
+<script>
+// invite / password-reset links used to land on this address: send them to the staff app with their sign-in token intact
+if (/(access_token|type=(invite|recovery|signup|magiclink)|error_description)/.test(location.hash + location.search)) location.replace("app.html" + location.search + location.hash);
+</script>
 </head><body>
-<div id="login" hidden>
-  <div class="login-art"><img src="logo.png" alt=""><h1>Franksomi Solution Ltd</h1><div class="tagline">For Quality Solutions in Tech</div><ul><li>Repairs</li><li>Sales</li><li>Installations</li><li>Printing &amp; Cyber</li></ul></div>
-  <form id="loginForm"><h1>Sign in</h1><p>Franksomi record book</p>
-    <label>Email<input name="email" type="email" required autocomplete="username"></label>
-    <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
-    <button class="btn">Sign in</button><p id="loginMsg" class="err"></p><small class="copy">© <span class="yr">2026</span> Franksomi Solution Ltd. All rights reserved.</small></form>
-  <form id="gateForm" hidden><h1>Choose your own password</h1><p id="gateWho">Before you start, set a password only you know.</p>
-    <label>New password (8 or more characters)<input name="p" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></label>
-    <label>Type it again<input name="q" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></label>
-    <button class="btn">Save and continue</button><p id="gateMsg" class="err"></p><button class="btn ghost" type="button" id="gateOut">Sign out</button><small class="copy">© <span class="yr">2026</span> Franksomi Solution Ltd. All rights reserved.</small></form>
-</div>
-<div id="app" hidden>
-  <header><img src="logo.png" alt="" height="34"><b>Franksomi Records</b><span id="who"></span><button class="btn ghost" id="chpw" title="Change my password">Password</button><button class="btn ghost" id="logout">Sign out</button></header>
-  <nav id="nav"></nav>
-  <main id="view"></main>
-  <footer class="copy">© <span class="yr">2026</span> Franksomi Solution Ltd. All rights reserved.</footer>
-</div>
-<div id="print" hidden></div>
-<dialog id="dlg"><form method="dialog" id="dlgForm"></form></dialog>
-<div id="toast"></div>
+<a class="skip" href="#main">Skip to content</a>
+<div id="siteHeader"></div>
+<main id="main">
+<section class="hero">
+  <svg class="circuit" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M0 120h260l60 60h200M1200 480H900l-60-60H620M0 520h180l50-50h120M1200 90h-220l-50 50h-180"/><circle cx="520" cy="180" r="7"/><circle cx="620" cy="420" r="7"/><circle cx="350" cy="470" r="7"/><circle cx="750" cy="140" r="7"/></svg>
+  <div class="wrap" style="position:relative">
+    <div>
+      <span class="kicker">Franksomi Solution Ltd · Kenya</span>
+      <h1>Fixed right.<br><em>Tracked live.</em></h1>
+      <p class="lead">Phones, laptops, CCTV, electrical, WiFi and everything tech, from one trusted shop. Quote first, SMS updates on your phone, and a receipt every time.</p>
+      <div class="cta"><a class="btn" href="shop.html">Shop online</a><a class="btn line" href="track.html" style="color:#fff">Track my order or repair</a></div>
+      <ul class="chips"><li>Screens</li><li>Charging ports</li><li>Batteries</li><li>Software &amp; flashing</li><li>Laptops &amp; printers</li><li>CCTV</li><li>Electrical</li></ul>
+    </div>
+    <div class="phone"><video id="introVideo" src="media/intro.mp4" poster="media/intro-poster.jpg" muted loop playsinline preload="metadata" aria-label="Franksomi brand intro"></video><div class="tag">Franksomi Solution Ltd · For Quality Solutions in Tech</div></div>
+  </div>
+</section>
+<div class="trust"><ul><li>Free phone diagnosis</li><li>Quote before any work</li><li>Job card for every device</li><li>SMS updates on your repair</li><li>Pay by M-Pesa</li><li>Receipt every time</li></ul></div>
+
+<section class="sec" id="services"><div class="wrap">
+  <div class="center"><span class="kicker">One shop for all your tech</span><h2>What we do</h2><p class="lead">Repairs, sales, installations and connectivity, all done by trained technicians and all trackable from your own phone.</p></div>
+  <div class="grid g4" style="margin-top:34px" id="svcGrid"></div>
+  <p class="center" style="margin-top:26px"><a class="btn blue" href="services.html">See every service</a></p>
+</div></section>
+
+<section class="sec alt"><div class="wrap">
+  <div class="center"><span class="kicker">Our promise</span><h2>You always know what is happening</h2><p class="lead">Every repair, installation job and shop order gets a number. Use it with your phone number to see exactly where things stand.</p></div>
+  <div class="grid g3 steps3" style="margin-top:44px">
+    <div class="card"><h3>We write it up</h3><p>A job card or order number, a quote before any work, and an SMS to your phone right away.</p></div>
+    <div class="card"><h3>You follow it live</h3><p>Open the tracking page any time to see each stage: received, repairing, ready, or packed, dispatched and out for delivery.</p></div>
+    <div class="card"><h3>You pay your way</h3><p>Pay with an M-Pesa prompt on your phone, or in cash on delivery or pickup. Your receipt comes with it.</p></div>
+  </div>
+  <form class="card" id="trackForm" style="margin-top:34px;max-width:760px;margin-inline:auto"><h3 style="margin-bottom:4px">Track now</h3><p style="color:var(--mut);margin-bottom:0">Enter the number on your receipt (ORD-0001, JC-0001 or J-001) and your phone number.</p>
+    <div class="trackbox"><input name="no" placeholder="ORD-0001, JC-0001 or J-001" required aria-label="Order, repair or job number" autocomplete="off"><input name="phone" type="tel" placeholder="Phone number" required aria-label="Phone number" autocomplete="tel"><button class="btn" type="submit">Track</button></div></form>
+</div></section>
+
+<section class="sec" id="shopteaser"><div class="wrap">
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:14px;margin-bottom:26px"><div><span class="kicker">Online shop</span><h2 style="margin:0">Accessories and electronics, delivered</h2></div><a class="btn blue" href="shop.html">Open the shop</a></div>
+  <div class="products" id="featured" aria-live="polite"><div class="empty" style="grid-column:1/-1">Loading products…</div></div>
+  <div class="grid g3" style="margin-top:30px">
+    <div class="card" style="display:flex;gap:14px;align-items:center"><span class="svc"><span class="ic" id="ic1"></span></span><div><b>Delivery or pickup</b><br><small style="color:var(--mut)">Rider in town, courier countrywide, or collect from the shop.</small></div></div>
+    <div class="card" style="display:flex;gap:14px;align-items:center"><span class="svc"><span class="ic" id="ic2"></span></span><div><b>Track to your door</b><br><small style="color:var(--mut)">Placed, confirmed, packed, dispatched, out for delivery, delivered.</small></div></div>
+    <div class="card" style="display:flex;gap:14px;align-items:center"><span class="svc"><span class="ic" id="ic3"></span></span><div><b>Pay by M-Pesa</b><br><small style="color:var(--mut)">A prompt on your phone, or pay on delivery. Tested before you leave.</small></div></div>
+  </div>
+</div></section>
+
+<section class="sec alt"><div class="wrap split">
+  <div><span class="kicker">Landlord WiFi</span><h2>Affordable. Fast. Reliable.</h2><p class="lead">Hotspot internet for estates, hostels and homes nearby. Join the network, pick a package on the login page and pay by M-Pesa. You are online.</p>
+    <ul class="ticks"><li>Join the LANDLORD WIFI network</li><li>Pick a package on the login page</li><li>Pay by M-Pesa and you are connected</li></ul>
+    <a class="btn" href="https://wa.me/254711952924?text=Hello%20Franksomi%2C%20I%20want%20Landlord%20WiFi%20for%20my%20property" target="_blank" rel="noopener">Get Landlord WiFi for your property</a></div>
+  <div class="poster"><img src="media/promo-wifi.jpg" alt="Welcome to Landlord WiFi: affordable, fast, reliable. Stay connected anytime, anywhere." loading="lazy" width="400" height="711"></div>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <div class="center"><span class="kicker">See us at work</span><h2>Watch and see</h2></div>
+  <div class="split" style="margin-top:30px"><div class="phone"><video src="media/promo.mp4" poster="media/promo-poster.jpg" controls playsinline preload="none" aria-label="Franksomi promo video with voiceover"></video><div class="tag">54 seconds · sound on</div></div>
+    <div><div class="gallery" style="grid-template-columns:1fr 1fr"><img src="media/promo-repair.jpg" alt="Fixed right. Tracked live. Screens, charging ports, batteries, software and flashing." loading="lazy"><img src="media/promo-cctv.jpg" alt="CCTV: see your property from your phone." loading="lazy"><img src="media/promo-laptops.jpg" alt="We repair laptops and printers too." loading="lazy"><img src="media/promo-services.jpg" alt="One shop for all your tech." loading="lazy"></div></div></div>
+</div></section>
+
+<section class="sec alt" id="contact"><div class="wrap split" style="align-items:start">
+  <div><span class="kicker">Get in touch</span><h2>Request a quote or book a repair</h2><p class="lead">Tell us what you need. We reply by phone or WhatsApp. A free site survey and written quote come with every CCTV and electrical request.</p>
+    <p><b>Call or WhatsApp</b><br><a href="tel:+254711952924" style="font:700 1.5rem var(--head)">0711 952 924</a></p><p><b>Email</b><br><a href="mailto:franksomi@gmail.com">franksomi@gmail.com</a></p><p><b>Where</b><br>Kenya</p>
+    <a class="btn green" href="https://wa.me/254711952924?text=Hello%20Franksomi%2C%20" target="_blank" rel="noopener">Chat on WhatsApp</a></div>
+  <form class="card" id="enqForm" novalidate><h3>Send us a message</h3>
+    <label>Your name<input name="name" required autocomplete="name"></label><label>Phone number<input name="phone" type="tel" required autocomplete="tel" placeholder="07xx xxx xxx"></label>
+    <label>What do you need?<select name="topic"><option>Phone repair</option><option>Laptop or printer repair</option><option>CCTV quote</option><option>Electrical quote</option><option>Landlord WiFi</option><option>Phones and accessories</option><option>Printing and cyber</option><option>Something else</option></select></label>
+    <label>Message (optional)<textarea name="message" maxlength="600"></textarea></label><div class="hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+    <button class="btn" type="submit">Send</button><p class="msg" id="enqMsg" role="status"></p></form>
+</div></section>
+</main>
+<div id="siteFooter"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="brand.js"></script>
-<script src="mpesa.js"></script>
-<script src="vendor/pdf-lib.min.js"></script>
-<script src="pdf.js"></script>
-<script src="app.js"></script>
-<script>document.querySelectorAll(".yr").forEach(function(e){e.textContent=new Date().getFullYear()})</script>
+<script src="config.js"></script><script src="web.js"></script>
+<script>
+(function(){
+  var E=WEB.esc, SV=[["phone","Phone repair","Screens, charging ports, batteries, software and flashing. Track your repair live by SMS.","Simu imeharibika? Tuletee."],
+    ["laptop","Laptop & printer repair","Screens, keyboards, batteries, Windows installs and upgrades. Printer jams, print quality and setup.","Laptop imekataa? Tuletee."],
+    ["plug","Phones, accessories & electronics","Genuine smartphones, chargers, earphones, power banks, cables and speakers, tested before you leave.","Simu mpya? Tuko na."],
+    ["cctv","CCTV installation","Supply, install and set up mobile viewing. Clean cabling and after-sales support.","Linda mali yako 24/7."],
+    ["bolt","Electrical installation","Homes, shops and plots. Safe wiring, neat finish, quoted upfront.","Stima salama, kazi safi."],
+    ["wifi","Landlord WiFi","Affordable, fast, reliable hotspot internet. Pay by M-Pesa.","Internet ya bei nafuu."],
+    ["printer","Printing & cyber","Typing, printing, scanning, KRA, eCitizen and online applications.","Kazi ya cyber? Tuko tayari."],
+    ["truck","Delivery & logistics","Rider in town and courier countrywide for shop orders, with live tracking.","Tunaleta mlangoni."]];
+  WEB.chrome("index.html");
+  document.getElementById("svcGrid").innerHTML=SV.map(function(s){return '<div class="card svc"><span class="ic">'+WEB.svgIcon(s[0])+'</span><h3>'+E(s[1])+'</h3><p>'+E(s[2])+'</p><span class="hook">'+E(s[3])+'</span></div>'}).join("");
+  document.getElementById("ic1").innerHTML=WEB.svgIcon("truck");document.getElementById("ic2").innerHTML=WEB.svgIcon("box");document.getElementById("ic3").innerHTML=WEB.svgIcon("check");
+  var v=document.getElementById("introVideo");if(v&&!matchMedia("(prefers-reduced-motion: reduce)").matches){var p=v.play();if(p&&p.catch)p.catch(function(){});v.controls=false;v.addEventListener("click",function(){v.paused?v.play():v.pause()})}
+  document.getElementById("trackForm").onsubmit=function(e){e.preventDefault();var f=e.target,no=f.no.value.trim();
+    if(/^\s*(jc|j)[-\s]*\d/i.test(no)) location.href="portal.html?job="+encodeURIComponent(no); else{try{sessionStorage.setItem("fk_tp",f.phone.value.trim())}catch(_){}location.href="track.html?order="+encodeURIComponent(no)}};
+  var box=document.getElementById("featured");
+  WEB.products().then(function(r){
+    if(r.offline||r.error||!r.list.length){box.innerHTML='<div class="empty" style="grid-column:1/-1"><img src="media/emblem.png" alt="">'+(r.offline?"The online shop is being set up.":r.error?"We could not load the shop just now.":"New stock is being added.")+' Ask us on <a href="'+WEB.waLink("Hello Franksomi, what accessories do you have?")+'">WhatsApp</a>.</div>';return}
+    var l=r.list.slice(0,8);box.innerHTML=l.map(WEB.card).join("");WEB.wireProducts(box,function(id){return r.list.find(function(p){return String(p.id)===String(id)})});});
+  document.getElementById("enqForm").onsubmit=async function(e){e.preventDefault();var f=e.target,m=document.getElementById("enqMsg");m.className="msg";
+    if(!WEB.db){m.className="msg bad";m.textContent="The form is not switched on yet. Please call or WhatsApp us on 0711 952 924.";return}
+    var b=f.querySelector("button");b.disabled=true;m.textContent="Sending…";
+    var r=await WEB.db.rpc("shop_enquiry",{p:{name:f.name.value,phone:f.phone.value,topic:f.topic.value,message:f.message.value,website:f.website.value}});b.disabled=false;
+    var d=r.data||{};if(r.error||!d.ok){m.className="msg bad";m.textContent=d.error==="phone"?"Please enter a valid phone number.":d.error==="name"?"Please enter your name.":d.error==="too_many"?"Too many messages. Please call us.":"Something went wrong. Please call or WhatsApp us.";return}
+    m.className="msg ok";m.textContent="Thank you! We will call or message you soon.";f.reset()};
+})();
+</script>
 </body></html>

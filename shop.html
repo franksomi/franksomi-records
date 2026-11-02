@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Online shop | Franksomi Solution Ltd</title><meta name="description" content="Phones, accessories and electronics delivered to your door or ready for pickup. Pay by M-Pesa or on delivery. Track your order up to delivery."><meta name="theme-color" content="#0E152B">
+<link rel="icon" href="media/emblem.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap"><link rel="stylesheet" href="web.css">
+</head><body><a class="skip" href="#main">Skip to content</a><div id="siteHeader"></div>
+<section class="shophead"><div class="wrap"><span class="kicker">Franksomi online shop</span><h1 style="font-size:clamp(1.8rem,5vw,2.8rem)">Accessories &amp; electronics</h1><p>Tested before you leave. Pay by M-Pesa or on delivery. Track your order up to your door.</p></div></section>
+<main id="main" class="wrap" style="padding-bottom:70px">
+  <div class="toolbar"><input id="q" type="search" placeholder="Search products…" aria-label="Search products"><select id="sort" aria-label="Sort"><option value="feat">Popular first</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option><option value="az">Name A to Z</option></select><a href="track.html" class="btn sm blue" style="margin-left:auto">Track my order</a></div>
+  <div class="cats" id="cats" role="group" aria-label="Categories"></div>
+  <div class="products" id="grid" style="margin-top:22px" aria-live="polite"><div class="empty" style="grid-column:1/-1">Loading products…</div></div>
+</main>
+<div id="siteFooter"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="config.js"></script><script src="web.js"></script>
+<script>
+(function(){
+  WEB.chrome("shop.html");
+  var all=[],cat="All",grid=document.getElementById("grid");
+  function draw(){var q=document.getElementById("q").value.toLowerCase().trim(),s=document.getElementById("sort").value;
+    var l=all.filter(function(p){return(cat==="All"||p.category===cat)&&(!q||(p.title+" "+(p.descr||"")+" "+(p.category||"")).toLowerCase().indexOf(q)>=0)});
+    l.sort(function(a,b){return s==="low"?a.price-b.price:s==="high"?b.price-a.price:s==="az"?a.title.localeCompare(b.title):(b.featured-a.featured)||a.title.localeCompare(b.title)});
+    grid.innerHTML=l.length?l.map(WEB.card).join(""):'<div class="empty" style="grid-column:1/-1"><img src="media/emblem.png" alt="">Nothing matches. Try another word, or ask us on <a href="'+WEB.waLink("Hello Franksomi, do you have ")+'">WhatsApp</a>.</div>'}
+  WEB.products().then(function(r){
+    if(r.offline||r.error||!r.list.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1"><img src="media/emblem.png" alt="">'+(r.offline?"The online shop is being set up.":r.error?"We could not load the shop just now. Please try again.":"New stock is being added.")+' Ask us on <a href="'+WEB.waLink("Hello Franksomi, what do you have in stock?")+'">WhatsApp</a>.</div>';return}
+    all=r.list;var cs=["All"].concat(Array.from(new Set(all.map(function(p){return p.category}).filter(Boolean))).sort());
+    var cb=document.getElementById("cats");cb.innerHTML=cs.map(function(c){return '<button class="cat'+(c===cat?" on":"")+'" data-c="'+WEB.esc(c)+'" type="button">'+WEB.esc(c)+'</button>'}).join("");
+    cb.onclick=function(e){var b=e.target.closest("[data-c]");if(!b)return;cat=b.dataset.c;cb.querySelectorAll(".cat").forEach(function(x){x.classList.toggle("on",x===b)});draw()};
+    document.getElementById("q").oninput=draw;document.getElementById("sort").onchange=draw;draw();
+    WEB.wireProducts(grid,function(id){return all.find(function(p){return String(p.id)===String(id)})});
+    var want=new URLSearchParams(location.search).get("p");if(want){var p=all.find(function(x){return String(x.id)===want});if(p)WEB.showProduct(p)}});
+})();
+</script></body></html>
