@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Franksomi Records (staff)</title>
+<link rel="icon" href="logo.png"><link rel="stylesheet" href="style.css">
+</head><body>
+<div id="login" hidden>
+  <div class="login-art"><img src="logo.png" alt=""><h1>Franksomi Solution Ltd</h1><div class="tagline">For Quality Solutions in Tech</div><ul><li>Repairs</li><li>Sales</li><li>Installations</li><li>Printing &amp; Cyber</li></ul></div>
+  <form id="loginForm"><h1>Sign in</h1><p>Franksomi record book</p>
+    <label>Email<input name="email" type="email" required autocomplete="username"></label>
+    <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+    <button class="btn">Sign in</button><p id="loginMsg" class="err"></p><small class="copy">© <span class="yr">2026</span> Franksomi Solution Ltd. All rights reserved.</small></form>
+  <form id="gateForm" hidden><h1>Choose your own password</h1><p id="gateWho">Before you start, set a password only you know.</p>
+    <label>New password (8 or more characters)<input name="p" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></label>
+    <label>Type it again<input name="q" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></label>
+    <button class="btn">Save and continue</button><p id="gateMsg" class="err"></p><button class="btn ghost" type="button" id="gateOut">Sign out</button><small class="copy">© <span class="yr">2026</span> Franksomi Solution Ltd. All rights reserved.</small></form>
+</div>
+<div id="app" hidden>
+  <header><img src="logo.png" alt="" height="34"><b>Franksomi Records</b><span id="who"></span><a class="btn ghost" href="index.html" target="_blank" rel="noopener" title="Open the public website">Website</a><button class="btn ghost" id="chpw" title="Change my password">Password</button><button class="btn ghost" id="logout">Sign out</button></header>
+  <nav id="nav"></nav>
+  <main id="view"></main>
+  <footer class="copy">© <span class="yr">2026</span> Franksomi Solution Ltd. All rights reserved.</footer>
+</div>
+<div id="print" hidden></div>
+<dialog id="dlg"><form method="dialog" id="dlgForm"></form></dialog>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="brand.js"></script>
+<script src="mpesa.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="pdf.js"></script>
+<script src="app.js"></script>
+<script>document.querySelectorAll(".yr").forEach(function(e){e.textContent=new Date().getFullYear()})</script>
+</body></html>

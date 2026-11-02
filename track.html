@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Track your order | Franksomi Solution Ltd</title><meta name="description" content="Track your Franksomi order from placed to delivered, or check a repair or installation job."><meta name="theme-color" content="#0E152B">
+<link rel="icon" href="media/emblem.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap"><link rel="stylesheet" href="web.css">
+</head><body><a class="skip" href="#main">Skip to content</a><div id="siteHeader"></div>
+
+<section class="shophead"><div class="wrap"><span class="kicker">Live tracking</span><h1 style="font-size:clamp(1.8rem,5vw,2.6rem)">Track your order</h1><p>Enter your order number and the phone number you used. For a repair (JC-0001) or installation job (J-001) use the same box.</p></div></section>
+<main id="main" class="wrap" style="padding:30px 18px 70px;max-width:820px">
+  <form class="card noprint" id="f"><div class="trackbox" style="margin-top:0"><input name="no" placeholder="ORD-0001, JC-0001 or J-001" required aria-label="Order, repair or job number" autocomplete="off"><input name="phone" type="tel" placeholder="Phone number" required aria-label="Phone number" autocomplete="tel"><button class="btn" type="submit">Track</button></div><p class="msg bad" id="err" role="alert" style="margin:10px 0 0"></p></form>
+  <div id="out" hidden></div>
+</main>
+<div id="siteFooter"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="config.js"></script><script src="web.js"></script>
+<script>
+(function(){
+  var E=WEB.esc,K=WEB.kes,$=WEB.$;WEB.chrome("track.html");var cur=null;
+  var FLOW={delivery:["Placed","Confirmed","Packed","Dispatched","Out for delivery","Delivered"],pickup:["Placed","Confirmed","Packed","Ready for pickup","Collected"]};
+  var SAY={"Placed":"We have your order and will confirm it shortly.","Confirmed":"Your order is confirmed and being prepared.","Packed":"Your items are packed and ready to go.","Dispatched":"Your order has left us and is on its way to the rider or courier.","Out for delivery":"Your order is out for delivery. Please keep your phone on.","Delivered":"Delivered. Thank you for shopping with us!","Ready for pickup":"Your order is ready. Please come and collect it with your order number.","Collected":"Collected. Thank you for shopping with us!","Cancelled":"This order was cancelled."};
+  var when=function(i){return new Date(i).toLocaleString("en-KE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})};
+  function show(o){
+    var flow=FLOW[o.fulfil]||FLOW.delivery,idx=flow.indexOf(o.stage),cancelled=o.stage==="Cancelled",last={};(o.updates||[]).forEach(function(u){if(!last[u.stage]||u.at>last[u.stage])last[u.stage]=u.at});
+    var pct=cancelled?0:Math.round((idx+1)/flow.length*100);
+    var steps=flow.map(function(s,i){var st=cancelled?(last[s]?"done":"todo"):i<idx?"done":i===idx?"cur":"todo";return '<li class="'+st+'"><span>'+E(s)+'<small>'+(st==="cur"?E(SAY[s]):"")+(last[s]&&st!=="todo"?" "+E(when(last[s])):"")+'</small></span></li>'}).join("");
+    var due=Number(o.balance_due),canPay=due>0&&!cancelled&&o.stage!=="Delivered"&&o.stage!=="Collected";
+    $("#out").innerHTML='<div class="card"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center"><div><small style="color:var(--mut)">Hello '+E(o.first_name)+'</small><div class="ordno" style="font-size:1.6rem">'+E(o.order_no)+'</div></div><span class="pill '+(cancelled?"bad":o.stage==="Delivered"||o.stage==="Collected"?"ok":"")+'">'+E(o.stage)+'</span></div>'+
+      (cancelled?'<div class="note">'+E(SAY.Cancelled)+' Please call 0711 952 924 if you did not expect this.</div>':'<div class="bar" role="progressbar" aria-valuenow="'+pct+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+pct+'%"></i></div>')+
+      (o.note?'<div class="note">'+E(o.note)+'</div>':"")+
+      (o.courier?'<div class="note"><b>Your rider / courier:</b> '+E(o.courier)+(o.courier_phone?' · <a href="tel:'+E(o.courier_phone.replace(/\s/g,""))+'">'+E(o.courier_phone)+'</a>':"")+(o.tracking_ref?'<br>Reference: '+E(o.tracking_ref):"")+'</div>':"")+
+      '<ul class="tl">'+steps+'</ul><small style="color:var(--mut)">Placed '+E(when(o.placed_on))+(o.delivered_on?" · "+(o.fulfil==="pickup"?"collected ":"delivered ")+E(o.delivered_on):"")+'</small></div>'+
+      '<div class="card" style="margin-top:16px"><h3>Your order</h3>'+(o.items||[]).map(function(i){return '<div class="sumrow"><span>'+E(i.name)+' × '+Number(i.qty)+'</span><span>'+K(i.price*i.qty)+'</span></div>'}).join("")+
+      '<div class="sumrow"><span>Items</span><span>'+K(o.subtotal)+'</span></div><div class="sumrow"><span>'+(o.fulfil==="pickup"?"Pickup at the shop":"Delivery · "+E(o.zone))+'</span><span>'+(Number(o.delivery_fee)?K(o.delivery_fee):"Free")+'</span></div>'+
+      '<div class="sumrow t"><span>Total</span><span>'+K(o.total)+'</span></div><div class="sumrow"><span>Paid so far</span><span>'+K(o.paid)+'</span></div><div class="sumrow"><span>Balance</span><b id="bal">'+K(due)+'</b></div>'+
+      (o.fulfil==="delivery"&&o.address?'<p style="margin:12px 0 0;color:var(--mut)"><b>Delivering to:</b> '+E(o.address)+'</p>':"")+
+      (canPay?'<div class="noprint" style="margin-top:14px"><button class="btn green" id="pay" type="button">Pay '+K(due)+' with M-Pesa now</button><p class="msg" id="pm" role="status"></p><small style="color:var(--mut)">A prompt goes to the phone number on the order. Or pay when your order arrives.</small></div>':due<=0&&!cancelled?'<p class="msg ok" style="margin-top:12px">Fully paid. Thank you!</p>':"")+'</div>'+
+      '<p class="noprint center" style="margin-top:16px"><button class="btn sm line" style="color:var(--txt)" onclick="print()" type="button">Print</button> <a class="btn sm green" target="_blank" rel="noopener" href="'+WEB.waLink("Hello Franksomi, about my order "+o.order_no+": ")+'">Ask about this order</a></p>';
+    $("#out").hidden=false;
+    var pay=$("#pay");if(pay)pay.onclick=async function(){pay.disabled=true;var m=$("#pm");var r=await WEB.payOrder(cur.no,cur.phone,due,function(t){m.className="msg";m.textContent=t});
+      if(r.ok){m.className="msg ok";m.textContent=r.review?"We received your payment and will confirm it shortly.":"Payment received. Thank you!";setTimeout(function(){lookup(cur.no,cur.phone,true)},1500)}else{m.className="msg bad";m.textContent=r.message;pay.disabled=false}};
+  }
+  async function lookup(no,phone,quiet){var err=$("#err");err.textContent="";
+    if(/^\s*(jc|j)[-\s]*\d/i.test(no)){location.href="portal.html?job="+encodeURIComponent(no);return}
+    if(!WEB.db){err.textContent="Tracking is not switched on yet. Please call 0711 952 924.";return}
+    var r=await WEB.db.rpc("shop_track",{p_order:no,p_phone:phone});var d=r.data||{};
+    if(r.error){err.textContent="Something went wrong. Please try again.";return}
+    if(d.error==="locked"){err.textContent="Too many wrong tries. Please wait an hour, or call the shop.";return}
+    if(d.error){err.textContent="We could not find that order with that phone number. Check the number on your SMS or receipt.";return}
+    cur={no:no,phone:phone};show(d);try{localStorage.setItem("fk_last",d.order_no)}catch(_){}}
+  $("#f").onsubmit=function(e){e.preventDefault();lookup(e.target.no.value.trim(),e.target.phone.value.trim())};
+  var q=new URLSearchParams(location.search),o=q.get("order")||WEB.safe(function(){return localStorage.getItem("fk_last")})||"";if(o)$("#f").no.value=o;
+  var p=WEB.safe(function(){var v=sessionStorage.getItem("fk_tp");sessionStorage.removeItem("fk_tp");return v});if(p)$("#f").phone.value=p;
+  if(q.get("order")&&p)lookup(o,p);
+})();
+</script></body></html>
